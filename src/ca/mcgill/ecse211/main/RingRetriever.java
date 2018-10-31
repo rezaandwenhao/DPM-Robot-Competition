@@ -1,6 +1,7 @@
 package ca.mcgill.ecse211.main;
 
-import ca.mcgill.ecse211.lab4.Odometer;
+import ca.mcgill.ecse211.odometer.Odometer;
+import ca.mcgill.ecse211.odometer.OdometerExceptions;
 import lejos.hardware.ev3.LocalEV3;
 import lejos.hardware.lcd.TextLCD;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
@@ -31,7 +32,7 @@ public class RingRetriever {
 	private static final Port lightPort = LocalEV3.get().getPort("S2");
 	private static final TextLCD lcd = LocalEV3.get().getTextLCD();
 	
-	public RingRetriever() {
+	public RingRetriever() throws OdometerExceptions{
 		
 		// Odometer
 		Odometer odometer = Odometer.getOdometer(leftMotor, rightMotor, TRACK, WHEEL_RAD);
