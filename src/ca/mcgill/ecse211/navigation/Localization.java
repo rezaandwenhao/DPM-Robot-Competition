@@ -1,3 +1,12 @@
+/**
+ * This is the localization class.
+ * It contains the falling edge method which will orient the robot towards zero degrees, using the ultrasonic sensor
+ * It also contains the light localization which ensures the robot is parallel to the grid lines using 2 light sensors
+ * @author Eden Ovadia
+ * @author Eliot Bourachot
+ * 
+ */
+
 package ca.mcgill.ecse211.navigation;
 
 import ca.mcgill.ecse211.odometer.Odometer;
@@ -42,12 +51,13 @@ public class Localization {
 	}
 	
 	/**
-	 * runs a falling edge localization procedure that follows these instructions:
+	 * This method runs a falling edge localization procedure that follows these instructions:
 	 * 
-	 * Start -> If looking at wall, turn clockwise towards void and a bit more
-	 * -> Rotate clockwise until you see a falling edge -> Record angle
-	 * Turn counter clockwise until you see a falling edge -> Record angle
-	 * Set new angle
+	 * When it starts, If the robot is facing a wall, turn clockwise towards void and a bit more.
+	 * Then Rotate clockwise until robot detects  a falling edge, record angle at the falling edge.
+	 * Turn counter clockwise until robot detects a second falling edge, record the angle.
+	 * Perform calculations to find zero degree angle.
+	 * Turn to zero degrees.
 	 */
 	public void fallingEdge() {
 		
@@ -85,7 +95,13 @@ public class Localization {
 		
 		nav.turnTo(0);
 	}
-	
+	/**
+	 * This method ensures the robot stays on track, it uses 2 light sensors above each wheel to do so.
+	 * When using this method, the robot will move until one of the sensors detects a line.
+	 * The corresponding wheel will stop, until the other wheel crosses the line as well.
+	 * This straightens the robot, and makes it exactly parallel to the grid lines.
+	 * 
+	 */
 	public void lightCorrection() {
 		nav.stopMotors();
 	   
@@ -129,7 +145,10 @@ public class Localization {
 	}
 	
 	/**
-	 * @return true if the robot is seeing a wall, false if its seeing the void
+	 * This method is used to tell if the robot is facing a wall or a void.
+	 * @return true if the robot detects a wall, false if its not.
+	 * This is called in the fallingEdge method
+	 * 
 	 */
 	boolean seeingSomething() {
 		usMean.fetchSample(usData, 0); // acquire data
@@ -147,6 +166,7 @@ public class Localization {
 	}
 	
 	/**
+	 * This method takes the two angles detected during the falling edge and calculates zero degrees
 	 * @return the correction needed to make the heading of the robot true North
 	 * @param angle1
 	 * @param angle2

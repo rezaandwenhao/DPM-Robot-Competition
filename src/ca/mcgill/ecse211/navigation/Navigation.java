@@ -1,4 +1,12 @@
-package ca.mcgill.ecse211.navigation;
+
+/**
+ * This is the navigationn class.
+ * It contains the falling edge method which will orient the robot towards zero degrees, using the ultrasonic sensor
+ * It also contains the light localization which ensures the robot is parallel to the grid lines using 2 light sensors
+ * @author Eden Ovadia
+ * @author Eliot Bourachot
+ * 
+ */package ca.mcgill.ecse211.navigation;
 
 import ca.mcgill.ecse211.odometer.Odometer;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
@@ -34,12 +42,13 @@ public class Navigation {
 	
 	  
 	/**
-	 * Rotates the robot to face the direction in which it needs to travel to
-	 * reach the point x,y.
-	 * Then rotates the wheels the exact distance from the current position to
-	 * the point x,y.
-	 * @param x
-	 * @param y
+	 * This method makes the robot travel to the coordinates it received as arguments.
+	 * The distance that needs to be traveled is calculated.
+	 * The angle that the robot needs to turn is calculated in the turnTo method which is called.
+	 * Rotates the robot to face the direction in which it needs to travel to.
+	 * Then rotates the wheels the exact distance from the current position to using the move method.
+	 * @param x: x coordinate of destination
+	 * @param y: y coordinate of destination
 	 */
 	public void travelTo(double x, double y) {  
 		double currentPos[] = odo.getXYT();
@@ -67,10 +76,9 @@ public class Navigation {
 	}
 	  
 	/**
-	 * turns the robot from currentAngle to angle theta in the most efficient direction
-	 * 
+	 * This method turns the robot from currentAngle to angle theta in the most efficient direction.
+	 * Calculations are performed to ensure the robot is turning in the smallest possible angle.
 	 * @param theta: angle at which to turn clockwise
-	 * @param currentAngle: angle at which the robot is currently oriented
 	 */
 	void turnTo(double theta) {
 		double toRotate = theta - odo.getXYT()[2];
@@ -88,10 +96,10 @@ public class Navigation {
     }
 	  
 	/**
-	 * rotates the robot either clockwise or counter clockwise, for a specified angle. 
-	 * @param clockwise
-	 * @param angle
-	 * @param wait: if the robot should wait for the rotation to terminate.
+	 * This method rotates the robot either clockwise or counter clockwise, for a specified angle. 
+	 * @param clockwise: a Boolean that if true signifies clockwise and if false signifies counter clockwise
+	 * @param angle: the angle that the robot should turn
+	 * @param wait: a Boolean that if true the robot should wait for the rotation to terminate before doing anything else.
 	 */
 	void rotate(boolean clockwise, int angle, boolean wait) {
 		motorL.setSpeed(ROTATE_SPEED);
@@ -106,9 +114,12 @@ public class Navigation {
 	}
 	  
 	/**
-	 * moves the robot forwards for a specified distance.
-	 * @param distance
-	 * @param wait: if the robot should wait for the rotation to terminate.
+	 * This method moves the robot forwards for a specified distance.
+	 * It is called in the travelTo method.
+	 * @param leftMotor: a Boolean that if true signifies that the left motor should be used
+	 * @param rightMotor: a Boolean that if true signifies that the right motor should be used
+	 * @param forward: a Boolean that if true signifies that the robot should move forward, and if false the robot should move backwards
+	 * @param wait: if the robot should wait for the rotation to terminate before doing anything else.
 	 */
 	void move(boolean leftMotor, boolean rightMotor, 
 			boolean forward, boolean wait, 
@@ -140,9 +151,9 @@ public class Navigation {
 	 * This method allows the conversion of a distance to the total rotation of each wheel need to
 	 * cover that distance.
 	 * 
-	 * @param radius
-	 * @param distance
-	 * @return
+	 * @param radius: a double for the radius of the wheel
+	 * @param distance: the calculated distance the robot must travel
+	 * @return an integer that signifies the total rotations of each wheel
 	 */
 	private static int convertDistance(double radius, double distance) {
 		return (int) ((180.0 * distance) / (Math.PI * radius));
