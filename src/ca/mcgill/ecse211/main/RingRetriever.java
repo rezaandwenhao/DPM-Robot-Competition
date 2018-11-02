@@ -32,6 +32,12 @@ public class RingRetriever {
 	private static final Port lightPort = LocalEV3.get().getPort("S2");
 	private static final TextLCD lcd = LocalEV3.get().getTextLCD();
 	
+	
+	/**
+	 * This method initializes the odometer class and starts the thread
+	 * It also initializes the ultrasonic sensors and uses a filter to reduce the fluctuations
+	 * @throws OdometerExceptions
+	 */
 	public RingRetriever() throws OdometerExceptions{
 		
 		// Odometer
@@ -51,14 +57,30 @@ public class RingRetriever {
 		
 	}
 	
+	/**
+	 * This method finds the rings on the tree and detects their colors
+	 * The colors are each associated with a value, with orange being worth the most
+	 */
 	public void findRings() {
 		
 	}
-	
+	 
+	/**
+	 * This method loads the rings into the basket section of the robot
+	 * This is done by raising the arms of the robot using the medium motor and taking the rings off the tree
+	 * The way of retrieving the rings is different depending if the ring is on the lower branch or the upper branch
+	 * The angle that the arms move towards the tree differs depending on the position of the ring
+	 */
 	public void loadRing() {
 		
 	}
-	
+	/**
+	 *This method unloads the rings from the robot
+	 *It will only be called when the robot is back in its home area
+	 *The unloading of the rings will be done using a medium motor
+	 *The motor will lower the back wall of the basket, then the robot will move back and forth until the rings are unloaded
+	 *
+	 */
 	public void unloadRing() {
 		
 	}
