@@ -11,6 +11,11 @@ import lejos.hardware.sensor.SensorModes;
 import lejos.robotics.SampleProvider;
 import lejos.robotics.filter.MeanFilter;
 
+/**
+ * <h1>ECSE 211 - Design Principles and Methods</h1>
+ * @author Eliott Bourachot
+ *
+ */
 public class RingRetriever {
 
 	// Enumerations
