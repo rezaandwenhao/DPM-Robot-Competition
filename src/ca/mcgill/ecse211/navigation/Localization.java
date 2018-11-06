@@ -9,6 +9,7 @@
 
 package ca.mcgill.ecse211.navigation;
 
+import ca.mcgill.ecse211.main.RingRetriever;
 import ca.mcgill.ecse211.odometer.Odometer;
 import lejos.hardware.Sound;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
@@ -18,7 +19,6 @@ public class Localization {
 	
 	// Class Relations
 	private Navigation nav;
-	private Odometer odo;
 
 	// Objects
 	private SampleProvider lightMeanL;
@@ -67,7 +67,7 @@ public class Localization {
 			nav.stopMotors();
 			
 			nav.rotate(true, 10, true); // rotate a bit more
-			odo.setTheta(odo.getXYT()[2]); // reset 0 angle
+			RingRetriever.odoData.setTheta(RingRetriever.odoData.getXYT()[2]); // reset 0 angle
 		}
 		
 		nav.rotate(true, 360, false); // rotate clockwise
@@ -75,7 +75,7 @@ public class Localization {
 		nav.stopMotors();
 		
 		Sound.beep();
-		double angle1 = odo.getXYT()[2];
+		double angle1 = RingRetriever.odoData.getXYT()[2];
 
 		nav.rotate(false, 360, false); // rotate counter-clockwise
 		long snapshot = System.currentTimeMillis();
@@ -87,11 +87,11 @@ public class Localization {
 		nav.stopMotors();
 		
 		Sound.beep();
-		double angle2 = odo.getXYT()[2];
+		double angle2 = RingRetriever.odoData.getXYT()[2];
 
 		double deltaTheta = getHeading(angle1, angle2);
 		
-		odo.setTheta(deltaTheta+odo.getXYT()[2]);
+		RingRetriever.odoData.setTheta(deltaTheta+RingRetriever.odoData.getXYT()[2]);
 		
 		nav.turnTo(0);
 	}

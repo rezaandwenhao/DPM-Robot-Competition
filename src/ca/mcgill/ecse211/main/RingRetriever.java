@@ -1,10 +1,11 @@
 package ca.mcgill.ecse211.main;
 
 import ca.mcgill.ecse211.odometer.Odometer;
-import ca.mcgill.ecse211.odometer.OdometerExceptions;
+import ca.mcgill.ecse211.odometer.OdometerData;
 import lejos.hardware.ev3.LocalEV3;
 import lejos.hardware.lcd.TextLCD;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
+import lejos.hardware.motor.EV3MediumRegulatedMotor;
 import lejos.hardware.port.Port;
 import lejos.hardware.sensor.EV3UltrasonicSensor;
 import lejos.hardware.sensor.SensorModes;
@@ -29,19 +30,27 @@ public class RingRetriever {
 	public static final double TRACK = 9.0; // (cm) measured with caliper
 	
 	// Objects
-	private static final EV3LargeRegulatedMotor leftMotor = 
+	public static final EV3LargeRegulatedMotor leftMotor = 
 			new EV3LargeRegulatedMotor(LocalEV3.get().getPort("A"));
-	private static final EV3LargeRegulatedMotor rightMotor =
-			new EV3LargeRegulatedMotor(LocalEV3.get().getPort("D"));
+	public static final EV3LargeRegulatedMotor rightMotor =
+			new EV3LargeRegulatedMotor(LocalEV3.get().getPort("B"));
+	public static final EV3MediumRegulatedMotor medMotor =
+			new EV3MediumRegulatedMotor(LocalEV3.get().getPort("C"));
+	public static final OdometerData odoData = new OdometerData();
+	public static final Odometer odo = new Odometer();
 	private static final Port usPort = LocalEV3.get().getPort("S1");
-	private static final Port lightPort = LocalEV3.get().getPort("S2");
+	private static final Port lightLPort = LocalEV3.get().getPort("S2");
+	private static final Port lightRPort = LocalEV3.get().getPort("S3");
+	private static final Port colorPort = LocalEV3.get().getPort("S4");
 	private static final TextLCD lcd = LocalEV3.get().getTextLCD();
 	
-	public RingRetriever() throws OdometerExceptions{
-		
+	// Update periods
+	public static final long ODOMETER_PERIOD = 25; // odometer update period in ms
+	
+	public static void main(String args[]) {
+
 		// Odometer
-		Odometer odometer = Odometer.getOdometer(leftMotor, rightMotor, TRACK, WHEEL_RAD);
-		Thread odoThread = new Thread(odometer);
+		Thread odoThread = new Thread(odo);
 		odoThread.start();
 
 		// Initializing Ultrasonic Sensor and runs it in this thread
@@ -50,10 +59,6 @@ public class RingRetriever {
 		SampleProvider usSample = usSensor.getMode("Distance"); 
 		SampleProvider usMean = new MeanFilter(usSample, 5); // use a mean filter to reduce fluctuations
 	    float[] usData = new float[usMean.sampleSize()]; // usData is the buffer in which data are returned
-	}
-	
-	public static void main(String args[]) {
-		
 	}
 	
 	public void findRings() {

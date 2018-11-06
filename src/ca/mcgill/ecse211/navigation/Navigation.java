@@ -8,6 +8,7 @@
  * 
  */package ca.mcgill.ecse211.navigation;
 
+import ca.mcgill.ecse211.main.RingRetriever;
 import ca.mcgill.ecse211.odometer.Odometer;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
 
@@ -28,16 +29,14 @@ public class Navigation {
 	private double leftRadius;
 	private double rightRadius;
 	private double track;
-	private Odometer odo;
 	    
 	Navigation(EV3LargeRegulatedMotor leftMotor, EV3LargeRegulatedMotor rightMotor, 
-			double leftRadius, double rightRadius, double track, Odometer odo) {
+			double leftRadius, double rightRadius, double track) {
 		this.motorL = leftMotor;
 		this.motorR = rightMotor;
 		this.leftRadius = leftRadius;
 		this.rightRadius = rightRadius;
 		this.track = track;
-		this.odo = odo;
 	}
 	
 	  
@@ -51,7 +50,7 @@ public class Navigation {
 	 * @param y: y coordinate of destination
 	 */
 	public void travelTo(double x, double y) {  
-		double currentPos[] = odo.getXYT();
+		double currentPos[] = RingRetriever.odoData.getXYT();
 		  
 		//difference in position
 		double deltaX = x*TILE_SIZE-currentPos[0];
@@ -81,7 +80,7 @@ public class Navigation {
 	 * @param theta: angle at which to turn clockwise
 	 */
 	void turnTo(double theta) {
-		double toRotate = theta - odo.getXYT()[2];
+		double toRotate = theta - RingRetriever.odoData.getXYT()[2];
 		  
 		if (toRotate > 180.0d) {
 			toRotate -= 360.0d;
