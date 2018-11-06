@@ -11,6 +11,7 @@ package ca.mcgill.ecse211.navigation;
 
 import ca.mcgill.ecse211.odometer.Odometer;
 import lejos.hardware.Sound;
+import lejos.hardware.lcd.TextLCD;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
 import lejos.robotics.SampleProvider;
 
@@ -27,27 +28,34 @@ public class Localization {
 	private float[] lightDataL;
 	private float[] lightDataR;
 	private float[] usData;
+	private TextLCD lcd;
 
 	// Parameters 
 	private static final int CORRECTION_ANGLE1 = 225;
 	private static final int CORRECTION_ANGLE2 = 45;
 	private static final int VOID_THRESHOLD = 30;
 	private static final int VOID_BAND = 3;
-	private static final int COLOR_THRESHOLD = 17;
+	private static final int R_COLOR_THRESHOLD = 17;
+	private static final int L_COLOR_THRESHOLD = 28;
+
 	private static final int LIGHT_X_OFFSET = 5;
 	private static final int LIGHT_Y_OFFSET = 5;
 	
 	// Global variables
 	private boolean pastView = false;
+	int placementOffset = 90;
 	
 	public Localization(SampleProvider lightMeanL, SampleProvider lightMeanR, SampleProvider usMean, 
-			float[] lightDataL, float[] lightDataR, float[] usData) {
+			float[] lightDataL, float[] lightDataR, float[] usData, Navigation nav, Odometer odo, TextLCD lcd) {
 		this.lightMeanL = lightMeanL;
 		this.lightMeanR = lightMeanR;
 		this.usMean = usMean;
 		this.lightDataL = lightDataL;
 		this.lightDataR = lightDataR;
 		this.usData = usData;
+		this.nav = nav;
+		this.odo = odo;
+		this.lcd = lcd;
 	}
 	
 	/**
@@ -91,7 +99,7 @@ public class Localization {
 
 		double deltaTheta = getHeading(angle1, angle2);
 		
-		odo.setTheta(deltaTheta+odo.getXYT()[2]);
+		odo.setTheta(deltaTheta+odo.getXYT()[2]-placementOffset);
 		
 		nav.turnTo(0);
 	}
@@ -114,7 +122,7 @@ public class Localization {
 		
 		// Move forwards until first sensor hits line
 		nav.move(true, true, true, false, 30, 30);
-		while (lightL > COLOR_THRESHOLD && lightR > COLOR_THRESHOLD) { // move forward until you hit a black band
+		while (lightL > L_COLOR_THRESHOLD && lightR > R_COLOR_THRESHOLD) { // move forward until you hit a black band
 			lightMeanL.fetchSample(lightDataL, 0); // acquire data
 			lightL = (int) (lightDataL[0] * 100.0); // extract from buffer, cast to int
 			lightMeanR.fetchSample(lightDataR, 0); // acquire data
@@ -124,17 +132,17 @@ public class Localization {
 		nav.stopMotors();
 		
 		// Move whichever sensor didn't hit line until it hits the line
-		if (lightL > COLOR_THRESHOLD) {
+		if (lightL > L_COLOR_THRESHOLD) {
 			nav.move(true, false, true, false, 10, 30);
-			while (lightL > COLOR_THRESHOLD) {
+			while (lightL > L_COLOR_THRESHOLD) {
 				lightMeanL.fetchSample(lightDataL, 0); // acquire data
 				lightL = (int) (lightDataL[0] * 100.0); // extract from buffer, cast to int
 			}
 			Sound.beep();
 			nav.stopMotors();
-		} else if (lightR > COLOR_THRESHOLD) {
+		} else if (lightR > R_COLOR_THRESHOLD) {
 			nav.move(false, true, true, false, 10, 30);
-			while (lightR > COLOR_THRESHOLD) {
+			while (lightR > R_COLOR_THRESHOLD) {
 				lightMeanR.fetchSample(lightDataR, 0); // acquire data
 				lightR = (int) (lightDataR[0] * 100.0); // extract from buffer, cast to int
 			}

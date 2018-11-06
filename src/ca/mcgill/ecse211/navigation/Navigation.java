@@ -19,7 +19,7 @@ import lejos.hardware.motor.EV3LargeRegulatedMotor;
  * This class is used to drive the robot on the demo floor.
  */
 public class Navigation {
-	private static final int FORWARD_SPEED = 150;
+	public static final int FORWARD_SPEED = 150;
 	private static final int ROTATE_SPEED = 70;
 	private static final double TILE_SIZE = 30.48;
 	  
@@ -30,7 +30,7 @@ public class Navigation {
 	private double track;
 	private Odometer odo;
 	    
-	Navigation(EV3LargeRegulatedMotor leftMotor, EV3LargeRegulatedMotor rightMotor, 
+	public Navigation(EV3LargeRegulatedMotor leftMotor, EV3LargeRegulatedMotor rightMotor, 
 			double leftRadius, double rightRadius, double track, Odometer odo) {
 		this.motorL = leftMotor;
 		this.motorR = rightMotor;
@@ -80,7 +80,7 @@ public class Navigation {
 	 * Calculations are performed to ensure the robot is turning in the smallest possible angle.
 	 * @param theta: angle at which to turn clockwise
 	 */
-	void turnTo(double theta) {
+	public void turnTo(double theta) {
 		double toRotate = theta - odo.getXYT()[2];
 		  
 		if (toRotate > 180.0d) {
@@ -101,7 +101,7 @@ public class Navigation {
 	 * @param angle: the angle that the robot should turn
 	 * @param wait: a Boolean that if true the robot should wait for the rotation to terminate before doing anything else.
 	 */
-	void rotate(boolean clockwise, int angle, boolean wait) {
+	public void rotate(boolean clockwise, int angle, boolean wait) {
 		motorL.setSpeed(ROTATE_SPEED);
 	    motorR.setSpeed(ROTATE_SPEED);
 		if (clockwise) {
@@ -121,7 +121,7 @@ public class Navigation {
 	 * @param forward: a Boolean that if true signifies that the robot should move forward, and if false the robot should move backwards
 	 * @param wait: if the robot should wait for the rotation to terminate before doing anything else.
 	 */
-	void move(boolean leftMotor, boolean rightMotor, 
+	public void move(boolean leftMotor, boolean rightMotor, 
 			boolean forward, boolean wait, 
 			double distance, int speed) {
 		// speed 
