@@ -1,7 +1,9 @@
 package ca.mcgill.ecse211.main;
 
+import ca.mcgill.ecse211.navigation.Localization;
 import ca.mcgill.ecse211.odometer.Odometer;
 import ca.mcgill.ecse211.odometer.OdometerData;
+import lejos.hardware.Button;
 import lejos.hardware.ev3.LocalEV3;
 import lejos.hardware.lcd.TextLCD;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
@@ -38,6 +40,7 @@ public class RingRetriever {
 			new EV3MediumRegulatedMotor(LocalEV3.get().getPort("C"));
 	public static final OdometerData odoData = new OdometerData();
 	public static final Odometer odo = new Odometer();
+	public static final Localization loc = new Localization();
 	private static final Port usPort = LocalEV3.get().getPort("S1");
 	private static final Port lightLPort = LocalEV3.get().getPort("S2");
 	private static final Port lightRPort = LocalEV3.get().getPort("S3");
@@ -59,6 +62,16 @@ public class RingRetriever {
 		SampleProvider usSample = usSensor.getMode("Distance"); 
 		SampleProvider usMean = new MeanFilter(usSample, 5); // use a mean filter to reduce fluctuations
 	    float[] usData = new float[usMean.sampleSize()]; // usData is the buffer in which data are returned
+	    
+	    // Ultrasonic Localization
+	    loc.setUltrasonicSensor(usMean, usData);
+	    (new Thread() {
+	    	public void run() {
+	    		RingRetriever.loc.fallingEdge();
+	    	}
+	    }).start();
+	    
+	    
 	}
 	
 	public void findRings() {

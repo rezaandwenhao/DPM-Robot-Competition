@@ -10,9 +10,7 @@
 package ca.mcgill.ecse211.navigation;
 
 import ca.mcgill.ecse211.main.RingRetriever;
-import ca.mcgill.ecse211.odometer.Odometer;
 import lejos.hardware.Sound;
-import lejos.hardware.motor.EV3LargeRegulatedMotor;
 import lejos.robotics.SampleProvider;
 
 public class Localization {
@@ -21,12 +19,12 @@ public class Localization {
 	private Navigation nav;
 
 	// Objects
-	private SampleProvider lightMeanL;
-	private SampleProvider lightMeanR;
-	private SampleProvider usMean;
-	private float[] lightDataL;
-	private float[] lightDataR;
-	private float[] usData;
+	private SampleProvider lightMeanL = null;
+	private SampleProvider lightMeanR = null;
+	private SampleProvider usMean = null;
+	private float[] lightDataL = null;
+	private float[] lightDataR = null;;
+	private float[] usData = null;
 
 	// Parameters 
 	private static final int CORRECTION_ANGLE1 = 225;
@@ -40,13 +38,19 @@ public class Localization {
 	// Global variables
 	private boolean pastView = false;
 	
-	public Localization(SampleProvider lightMeanL, SampleProvider lightMeanR, SampleProvider usMean, 
-			float[] lightDataL, float[] lightDataR, float[] usData) {
+	public Localization() {
+		
+	}
+	
+	public void setLightSensors(SampleProvider lightMeanL, SampleProvider lightMeanR, float[] lightDataL, float[] lightDataR) {
 		this.lightMeanL = lightMeanL;
 		this.lightMeanR = lightMeanR;
-		this.usMean = usMean;
 		this.lightDataL = lightDataL;
 		this.lightDataR = lightDataR;
+	}
+	
+	public void setUltrasonicSensor(SampleProvider usMean, float[] usData) {
+		this.usMean = usMean;
 		this.usData = usData;
 	}
 	
