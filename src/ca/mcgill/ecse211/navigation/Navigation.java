@@ -9,8 +9,6 @@
  */package ca.mcgill.ecse211.navigation;
 
 import ca.mcgill.ecse211.main.RingRetriever;
-import ca.mcgill.ecse211.odometer.Odometer;
-import lejos.hardware.motor.EV3LargeRegulatedMotor;
 
 /*
  * Navigation.java
@@ -20,26 +18,11 @@ import lejos.hardware.motor.EV3LargeRegulatedMotor;
  * This class is used to drive the robot on the demo floor.
  */
 public class Navigation {
-	private static final int FORWARD_SPEED = 150;
-	private static final int ROTATE_SPEED = 70;
-	private static final double TILE_SIZE = 30.48;
-	  
-	private EV3LargeRegulatedMotor motorL;
-	private EV3LargeRegulatedMotor motorR;
-	private double leftRadius;
-	private double rightRadius;
-	private double track;
 	    
-	Navigation(EV3LargeRegulatedMotor leftMotor, EV3LargeRegulatedMotor rightMotor, 
-			double leftRadius, double rightRadius, double track) {
-		this.motorL = leftMotor;
-		this.motorR = rightMotor;
-		this.leftRadius = leftRadius;
-		this.rightRadius = rightRadius;
-		this.track = track;
+	public Navigation() {
+		
 	}
 	
-	  
 	/**
 	 * This method makes the robot travel to the coordinates it received as arguments.
 	 * The distance that needs to be traveled is calculated.
@@ -53,8 +36,8 @@ public class Navigation {
 		double currentPos[] = RingRetriever.odoData.getXYT();
 		  
 		//difference in position
-		double deltaX = x*TILE_SIZE-currentPos[0];
-		double deltaY = y*TILE_SIZE-currentPos[1];
+		double deltaX = x*RingRetriever.TILE_SIZE-currentPos[0];
+		double deltaY = y*RingRetriever.TILE_SIZE-currentPos[1];
 	  
 		// length of straight line from current position to desired position
 		double hypotenuse = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
@@ -71,7 +54,7 @@ public class Navigation {
 		turnTo(desiredAngle);
 	  
 		//move forwards to reach the point x,y.
-		move(true, true, true, true, hypotenuse, FORWARD_SPEED);
+		move(true, true, true, true, hypotenuse, RingRetriever.FORWARD_SPEED);
 	}
 	  
 	/**
@@ -79,7 +62,7 @@ public class Navigation {
 	 * Calculations are performed to ensure the robot is turning in the smallest possible angle.
 	 * @param theta: angle at which to turn clockwise
 	 */
-	void turnTo(double theta) {
+	public void turnTo(double theta) {
 		double toRotate = theta - RingRetriever.odoData.getXYT()[2];
 		  
 		if (toRotate > 180.0d) {
@@ -87,11 +70,11 @@ public class Navigation {
 		} else if (toRotate < -180.0d) {
 			toRotate += 360.0d;
 		}
-		motorL.setSpeed(ROTATE_SPEED);
-	    motorR.setSpeed(ROTATE_SPEED);
+		RingRetriever.leftMotor.setSpeed(RingRetriever.ROTATE_SPEED);
+	    RingRetriever.rightMotor.setSpeed(RingRetriever.ROTATE_SPEED);
 	      
-		motorL.rotate(convertAngle(leftRadius, track, toRotate), true);
-	    motorR.rotate(-convertAngle(rightRadius, track, toRotate), false);
+		RingRetriever.leftMotor.rotate(convertAngle(RingRetriever.LEFT_RADIUS, RingRetriever.TRACK, toRotate), true);
+	    RingRetriever.rightMotor.rotate(-convertAngle(RingRetriever.RIGHT_RADIUS, RingRetriever.TRACK, toRotate), false);
     }
 	  
 	/**
@@ -101,14 +84,14 @@ public class Navigation {
 	 * @param wait: a Boolean that if true the robot should wait for the rotation to terminate before doing anything else.
 	 */
 	void rotate(boolean clockwise, int angle, boolean wait) {
-		motorL.setSpeed(ROTATE_SPEED);
-	    motorR.setSpeed(ROTATE_SPEED);
+		RingRetriever.leftMotor.setSpeed(RingRetriever.ROTATE_SPEED);
+	    RingRetriever.rightMotor.setSpeed(RingRetriever.ROTATE_SPEED);
 		if (clockwise) {
-			motorL.rotate(convertAngle(leftRadius, track, angle), true);
-		    motorR.rotate(-convertAngle(rightRadius, track, angle), !wait);
+			RingRetriever.leftMotor.rotate(convertAngle(RingRetriever.LEFT_RADIUS, RingRetriever.TRACK, angle), true);
+			RingRetriever.rightMotor.rotate(-convertAngle(RingRetriever.RIGHT_RADIUS, RingRetriever.TRACK, angle), !wait);
 		} else {
-		  	motorL.rotate(-convertAngle(leftRadius, track, angle), true);
-		   	motorR.rotate(convertAngle(rightRadius, track, angle), !wait);
+			RingRetriever.leftMotor.rotate(-convertAngle(RingRetriever.LEFT_RADIUS, RingRetriever.TRACK, angle), true);
+			RingRetriever.rightMotor.rotate(convertAngle(RingRetriever.RIGHT_RADIUS, RingRetriever.TRACK, angle), !wait);
 		}
 	}
 	  
@@ -123,10 +106,10 @@ public class Navigation {
 	void move(boolean leftMotor, boolean rightMotor, boolean forward, boolean wait, double distance, int speed) {
 		// speed 
 		if (leftMotor) {
-			motorL.setSpeed(speed);
+			RingRetriever.leftMotor.setSpeed(speed);
 		}
 		if (rightMotor) {
-			motorR.setSpeed(speed);
+			RingRetriever.rightMotor.setSpeed(speed);
 		}
 	
 		// direction
@@ -134,12 +117,12 @@ public class Navigation {
 		if (forward) direction = 1;
 		
 		if (leftMotor && rightMotor) {
-			motorL.rotate(direction*convertDistance(leftRadius, distance), true);
-		    motorR.rotate(direction*convertDistance(rightRadius, distance), !wait);
+			RingRetriever.leftMotor.rotate(direction*convertDistance(RingRetriever.LEFT_RADIUS, distance), true);
+			RingRetriever.rightMotor.rotate(direction*convertDistance(RingRetriever.RIGHT_RADIUS, distance), !wait);
 		} else if (leftMotor) {
-			motorL.rotate(direction*convertDistance(leftRadius, distance), !wait);
+			RingRetriever.leftMotor.rotate(direction*convertDistance(RingRetriever.LEFT_RADIUS, distance), !wait);
 		} else if (rightMotor) {
-			motorR.rotate(direction*convertDistance(leftRadius, distance), !wait);
+			RingRetriever.rightMotor.rotate(direction*convertDistance(RingRetriever.LEFT_RADIUS, distance), !wait);
 		}
 	    
 	}
@@ -164,7 +147,7 @@ public class Navigation {
 	 * stops the motors at the same time.
 	 */
 	public void stopMotors() {
-		motorL.stop(true);
-		motorR.stop(false);
+		RingRetriever.leftMotor.stop(true);
+		RingRetriever.rightMotor.stop(false);
 	}
 }

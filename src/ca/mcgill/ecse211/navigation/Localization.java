@@ -14,9 +14,6 @@ import lejos.hardware.Sound;
 import lejos.robotics.SampleProvider;
 
 public class Localization {
-	
-	// Class Relations
-	private Navigation nav;
 
 	// Objects
 	private SampleProvider lightMeanL = null;
@@ -37,6 +34,7 @@ public class Localization {
 	
 	// Global variables
 	private boolean pastView = false;
+	private int placementOffset = 90;
 	
 	public Localization() {
 		
@@ -66,38 +64,38 @@ public class Localization {
 	public void fallingEdge() {
 		
 		if (seeingSomething()) {
-			nav.rotate(true, 360, false); // rotate clockwise
+			RingRetriever.nav.rotate(true, 360, false); // rotate clockwise
 			while (seeingSomething()); // if we're facing the wall, turn to face the void
-			nav.stopMotors();
+			RingRetriever.nav.stopMotors();
 			
-			nav.rotate(true, 10, true); // rotate a bit more
+			RingRetriever.nav.rotate(true, 10, true); // rotate a bit more
 			RingRetriever.odoData.setTheta(RingRetriever.odoData.getXYT()[2]); // reset 0 angle
 		}
 		
-		nav.rotate(true, 360, false); // rotate clockwise
+		RingRetriever.nav.rotate(true, 360, false); // rotate clockwise
 		while(!seeingSomething());
-		nav.stopMotors();
+		RingRetriever.nav.stopMotors();
 		
 		Sound.beep();
 		double angle1 = RingRetriever.odoData.getXYT()[2];
 
-		nav.rotate(false, 360, false); // rotate counter-clockwise
+		RingRetriever.nav.rotate(false, 360, false); // rotate counter-clockwise
 		long snapshot = System.currentTimeMillis();
 		while(seeingSomething() || (System.currentTimeMillis() - snapshot > 1000));
-		nav.stopMotors();
+		RingRetriever.nav.stopMotors();
 		
-		nav.rotate(false, 360, false); // rotate counter-clockwise
+		RingRetriever.nav.rotate(false, 360, false); // rotate counter-clockwise
 		while(!seeingSomething());
-		nav.stopMotors();
+		RingRetriever.nav.stopMotors();
 		
 		Sound.beep();
 		double angle2 = RingRetriever.odoData.getXYT()[2];
 
 		double deltaTheta = getHeading(angle1, angle2);
 		
-		RingRetriever.odoData.setTheta(deltaTheta+RingRetriever.odoData.getXYT()[2]);
+		RingRetriever.odoData.setTheta(deltaTheta+RingRetriever.odoData.getXYT()[2]-placementOffset);
 		
-		nav.turnTo(0);
+		RingRetriever.nav.turnTo(0);
 	}
 	/**
 	 * This method ensures the robot stays on track, it uses 2 light sensors above each wheel to do so.
@@ -107,7 +105,7 @@ public class Localization {
 	 * 
 	 */
 	public void lightCorrection() {
-		nav.stopMotors();
+		RingRetriever.nav.stopMotors();
 	   
 	    // Read both sensors once at first
 	    lightMeanL.fetchSample(lightDataL, 0); // acquire data
@@ -117,7 +115,7 @@ public class Localization {
 		int lightR = (int) (lightDataR[0] * 100.0); // extract from buffer, cast to int
 		
 		// Move forwards until first sensor hits line
-		nav.move(true, true, true, false, 30, 30);
+		RingRetriever.nav.move(true, true, true, false, 30, 30);
 		while (lightL > COLOR_THRESHOLD && lightR > COLOR_THRESHOLD) { // move forward until you hit a black band
 			lightMeanL.fetchSample(lightDataL, 0); // acquire data
 			lightL = (int) (lightDataL[0] * 100.0); // extract from buffer, cast to int
@@ -125,25 +123,25 @@ public class Localization {
 			lightR = (int) (lightDataR[0] * 100.0); // extract from buffer, cast to int
 		}
 		Sound.beep();
-		nav.stopMotors();
+		RingRetriever.nav.stopMotors();
 		
 		// Move whichever sensor didn't hit line until it hits the line
 		if (lightL > COLOR_THRESHOLD) {
-			nav.move(true, false, true, false, 10, 30);
+			RingRetriever.nav.move(true, false, true, false, 10, 30);
 			while (lightL > COLOR_THRESHOLD) {
 				lightMeanL.fetchSample(lightDataL, 0); // acquire data
 				lightL = (int) (lightDataL[0] * 100.0); // extract from buffer, cast to int
 			}
 			Sound.beep();
-			nav.stopMotors();
+			RingRetriever.nav.stopMotors();
 		} else if (lightR > COLOR_THRESHOLD) {
-			nav.move(false, true, true, false, 10, 30);
+			RingRetriever.nav.move(false, true, true, false, 10, 30);
 			while (lightR > COLOR_THRESHOLD) {
 				lightMeanR.fetchSample(lightDataR, 0); // acquire data
 				lightR = (int) (lightDataR[0] * 100.0); // extract from buffer, cast to int
 			}
 			Sound.beep();
-			nav.stopMotors();
+			RingRetriever.nav.stopMotors();
 		}
 		Sound.beepSequence();
 	}
