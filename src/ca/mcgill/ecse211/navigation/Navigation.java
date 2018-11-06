@@ -120,9 +120,7 @@ public class Navigation {
 	 * @param forward: a Boolean that if true signifies that the robot should move forward, and if false the robot should move backwards
 	 * @param wait: if the robot should wait for the rotation to terminate before doing anything else.
 	 */
-	void move(boolean leftMotor, boolean rightMotor, 
-			boolean forward, boolean wait, 
-			double distance, int speed) {
+	void move(boolean leftMotor, boolean rightMotor, boolean forward, boolean wait, double distance, int speed) {
 		// speed 
 		if (leftMotor) {
 			motorL.setSpeed(speed);
