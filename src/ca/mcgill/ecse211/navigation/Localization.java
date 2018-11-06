@@ -33,6 +33,7 @@ public class Localization {
 	// Parameters 
 	private static final int CORRECTION_ANGLE1 = 225;
 	private static final int CORRECTION_ANGLE2 = 45;
+	private static final int CORRECTION_TIMEOUT = 3000;
 	private static final int VOID_THRESHOLD = 30;
 	private static final int VOID_BAND = 3;
 	private static final int R_COLOR_THRESHOLD = 17;
@@ -133,19 +134,39 @@ public class Localization {
 		
 		// Move whichever sensor didn't hit line until it hits the line
 		if (lightL > L_COLOR_THRESHOLD) {
-			nav.move(true, false, true, false, 10, 30);
-			while (lightL > L_COLOR_THRESHOLD) {
-				lightMeanL.fetchSample(lightDataL, 0); // acquire data
-				lightL = (int) (lightDataL[0] * 100.0); // extract from buffer, cast to int
-			}
+			boolean timeout = false;
+			boolean forwards = true;
+			do {
+				nav.move(true, false, forwards, false, 10, 30);
+				long timeoutSnapshot = System.currentTimeMillis();
+				while (lightL > L_COLOR_THRESHOLD) {
+					lightMeanL.fetchSample(lightDataL, 0); // acquire data
+					lightL = (int) (lightDataL[0] * 100.0); // extract from buffer, cast to int
+					if (System.currentTimeMillis() - timeoutSnapshot > CORRECTION_TIMEOUT) {
+						timeout = true;
+						forwards = !forwards;
+						break;
+					}
+				}	
+			} while (timeout);
 			Sound.beep();
 			nav.stopMotors();
 		} else if (lightR > R_COLOR_THRESHOLD) {
-			nav.move(false, true, true, false, 10, 30);
-			while (lightR > R_COLOR_THRESHOLD) {
-				lightMeanR.fetchSample(lightDataR, 0); // acquire data
-				lightR = (int) (lightDataR[0] * 100.0); // extract from buffer, cast to int
-			}
+			boolean timeout = false;
+			boolean forwards = true;
+			do {
+				nav.move(false, true, true, false, 10, 30);
+				long timeoutSnapshot = System.currentTimeMillis();
+				while (lightR > R_COLOR_THRESHOLD) {
+					lightMeanR.fetchSample(lightDataR, 0); // acquire data
+					lightR = (int) (lightDataR[0] * 100.0); // extract from buffer, cast to int
+					if (System.currentTimeMillis() - timeoutSnapshot > CORRECTION_TIMEOUT) {
+						timeout = true;
+						forwards = !forwards;
+						break;
+					}
+				}
+			} while (timeout);
 			Sound.beep();
 			nav.stopMotors();
 		}

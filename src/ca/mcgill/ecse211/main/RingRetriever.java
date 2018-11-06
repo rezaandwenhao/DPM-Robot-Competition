@@ -1,9 +1,14 @@
 package ca.mcgill.ecse211.main;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import ca.mcgill.ecse211.navigation.Localization;
 import ca.mcgill.ecse211.navigation.Navigation;
 import ca.mcgill.ecse211.odometer.Odometer;
 import ca.mcgill.ecse211.odometer.OdometerExceptions;
+import ca.mcgill.ecse211.wifi.Wifi;
+import lejos.hardware.Button;
 import lejos.hardware.ev3.LocalEV3;
 import lejos.hardware.lcd.TextLCD;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
@@ -30,6 +35,8 @@ public class RingRetriever {
 	// Parameters
 	public static final double WHEEL_RAD = 2.13; // (cm) measured with caliper
 	public static final double TRACK = 16.8; // (cm) measured with caliper
+	private static final double LIGHT_SENSOR_X_OFFSET = 3.5;
+	private static final double LIGHT_SENSOR_Y_OFFSET = 4.75;
 	
 	// Objects
 	private static final EV3LargeRegulatedMotor leftMotor = 
@@ -42,6 +49,14 @@ public class RingRetriever {
 	private static final TextLCD lcd = LocalEV3.get().getTextLCD();
 	
 	public static void main(String args[])  throws OdometerExceptions {
+		
+		Wifi wifi = new Wifi();
+		Map data = wifi.run();
+		
+		lcd.drawString("red team: "+((Long) data.get("RedTeam")).intValue(), 0, 0);
+
+		Button.waitForAnyPress();
+		
 		// Odometer
 		Odometer odometer = Odometer.getOdometer(leftMotor, rightMotor, TRACK, WHEEL_RAD);
 		Thread odoThread = new Thread(odometer);
@@ -75,13 +90,16 @@ public class RingRetriever {
 	   
  	    ll.fallingEdge();
 		ll.lightCorrection();
-	    odometer.setXYT(odometer.getXYT()[0], 0, 0); // reset Y and Theta
-	    nav.move(true, true, false, true, 10, Navigation.FORWARD_SPEED);
+	    odometer.setXYT(odometer.getXYT()[0], 1-LIGHT_SENSOR_Y_OFFSET, 0); // reset Y and Theta
+	    nav.move(true, true, false, true, 5, Navigation.FORWARD_SPEED);
 	    nav.rotate(true, 90, true);
 	    ll.lightCorrection();
-	    odometer.setXYT(0, odometer.getXYT()[1], 90);
-	    nav.travelTo(0, 0);
+	    odometer.setXYT(1-LIGHT_SENSOR_X_OFFSET, odometer.getXYT()[1], 90);
+	    nav.travelTo(1, 1);
 	    nav.turnTo(0);
+	    nav.travelTo(2, 2.2);
+	    nav.turnTo(90);
+	    nav.travelTo(4, 2);
 	    
 	}
 	
