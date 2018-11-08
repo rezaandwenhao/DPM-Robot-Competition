@@ -62,12 +62,9 @@ public class RingRetriever {
 	public static void main(String args[])  throws OdometerExceptions {
 		
 		Wifi wifi = new Wifi();
-		Map data = wifi.run();
+		Map data = wifi.getData();
 		
-		lcd.drawString("red team: "+((Long) data.get("RedTeam")).intValue(), 0, 0);
-
-		Button.waitForAnyPress();
-
+		lcd.drawString("Tunnel LL x: "+((Long) data.get("TNR_LL_x")).intValue(), 0, 0);
 		
 		// Odometer
 		Odometer odometer = Odometer.getOdometer(leftMotor, rightMotor, TRACK, WHEEL_RAD);
