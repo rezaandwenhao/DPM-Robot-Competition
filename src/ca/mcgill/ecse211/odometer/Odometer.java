@@ -10,6 +10,7 @@
 
 package ca.mcgill.ecse211.odometer;
 
+import ca.mcgill.ecse211.main.RingRetriever;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
 
 /**
@@ -33,7 +34,7 @@ public class Odometer extends OdometerData implements Runnable {
   private final double TRACK; // (cm) measured with caliper
   private final double WHEEL_RAD; // (cm) measured with caliper
 
-  private double[] position; //[0] is X, [1] is Y, [2] is Theta
+  private double[] position; //[0] is X in cm, [1] is Y in cm, [2] is Theta
 
 
   private static final long ODOMETER_PERIOD = 25; // odometer update period in ms
@@ -145,6 +146,27 @@ public class Odometer extends OdometerData implements Runnable {
           // there is nothing to be done
         }
       }
+    }
+  }
+
+  public void setStartingCoordinates(int startingCorner) {
+	double x_off = RingRetriever.LIGHT_SENSOR_X_OFFSET;
+	double y_off = RingRetriever.LIGHT_SENSOR_Y_OFFSET;
+    switch (startingCorner) {
+    case 0:
+    	odo.update(1-x_off, 1-y_off, 0);
+    	break;
+    case 1:
+    	odo.update(14-x_off, 1-y_off, -90);
+    	break;
+    case 2:
+    	odo.update(14-x_off, 8-y_off, 180);
+    	break;
+    case 3:
+    	odo.update(1-x_off, 8-y_off, 90);
+    	break;
+    default:
+    	break;
     }
   }
 }
