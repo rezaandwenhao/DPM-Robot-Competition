@@ -48,15 +48,17 @@ public class RingRetriever {
 	private static final Port lightRPort = LocalEV3.get().getPort("S4");
 	private static final TextLCD lcd = LocalEV3.get().getTextLCD();
 	
-<<<<<<< HEAD
+
 	
 	/**
 	 * This method initializes the odometer class and starts the thread
 	 * It also initializes the ultrasonic sensors and uses a filter to reduce the fluctuations
 	 * @throws OdometerExceptions
 	 */
-	public RingRetriever() throws OdometerExceptions{
-=======
+	public RingRetriever() throws OdometerExceptions {
+		
+	}
+	
 	public static void main(String args[])  throws OdometerExceptions {
 		
 		Wifi wifi = new Wifi();
@@ -65,7 +67,7 @@ public class RingRetriever {
 		lcd.drawString("red team: "+((Long) data.get("RedTeam")).intValue(), 0, 0);
 
 		Button.waitForAnyPress();
->>>>>>> 546372f883f5b988fd1a54b493961772469ca127
+
 		
 		// Odometer
 		Odometer odometer = Odometer.getOdometer(leftMotor, rightMotor, TRACK, WHEEL_RAD);
@@ -114,6 +116,7 @@ public class RingRetriever {
 	}
 	
 	/**
+	 * 
 	 * This method finds the rings on the tree and detects their colors
 	 * The colors are each associated with a value, with orange being worth the most
 	 */
@@ -143,3 +146,4 @@ public class RingRetriever {
 	
 	
 }
+

@@ -72,8 +72,8 @@ public class Odometer extends OdometerData implements Runnable {
   /**
    * This method is meant to ensure only one instance of the odometer is used throughout the code.
    * 
-   * @param motorL
-   * @param motorR
+   * @param motorL- the left motor
+   * @param motorR - the right motor
    * @return new or existing Odometer Object
    * @throws OdometerExceptions
    */

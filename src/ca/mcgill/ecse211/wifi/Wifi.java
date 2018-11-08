@@ -58,7 +58,7 @@ public class Wifi {
     // Connect to server and get the data, catching any errors that might occur
 	Map data = null;
 	try {
-      /*
+      /**
        * getData() will connect to the server and wait until the user/TA presses the "Start" button
        * in the GUI on their laptop with the data filled in. Once it's waiting, you can kill it by
        * pressing the upper left hand corner button (back/escape) on the EV3. getData() will throw
@@ -68,7 +68,7 @@ public class Wifi {
        * example, if TEAM_NUMBER is set to 1 above but the server expects teams 17 and 5, this robot
        * will receive a message saying an invalid team number was specified and getData() will throw
        * an exception letting you know.
-       */
+       **/
       data = conn.getData();
 
 //      // Example 1: Print out all received data

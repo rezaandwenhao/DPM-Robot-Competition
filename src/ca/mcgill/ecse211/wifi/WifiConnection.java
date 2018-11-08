@@ -22,7 +22,7 @@ import java.io.*;
 import java.net.Socket;
 import java.util.HashMap;
 
-/*
+/**
  * This class opens a wifi connection, waits for the data
  * and then allows access to the data after closing the wifi socket.
  * 
@@ -31,7 +31,7 @@ import java.util.HashMap;
  * 
  * Then, once completed, it will allow access to an instance of the Transmission
  * class which has access to all of the data needed
- */
+ **/
 public class WifiConnection {
 
 	public HashMap<String, Integer> StartData;
