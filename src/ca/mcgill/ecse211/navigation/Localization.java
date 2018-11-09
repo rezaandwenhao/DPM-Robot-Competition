@@ -9,6 +9,8 @@
 
 package ca.mcgill.ecse211.navigation;
 
+import ca.mcgill.ecse211.main.RingRetriever;
+import ca.mcgill.ecse211.main.RingRetriever.Tunnel;
 import ca.mcgill.ecse211.odometer.Odometer;
 import lejos.hardware.Sound;
 import lejos.hardware.lcd.TextLCD;
@@ -206,6 +208,83 @@ public class Localization {
 		} else {
 			angle1 %= 360;
 			return CORRECTION_ANGLE2-((angle1+angle2)/2);
+		}
+	}
+
+	/**
+	 * ATTENTION: REQUIRES ROBOT TO BE AT "ENTRANCE" OF TUNNEL!!!
+	 * 1. rotate to known angle
+	 * 2. correct angle by light correcting
+	 * 3. go to middle of square
+	 * 4. rotate to tunnel
+	 * 5. correct angle by light correcting
+	 * If entering, we now should be in front of the tunnel and aligned well enough to go through it.
+	 * If exiting, we now should be facing opposite of the tunnel and aligned on a black line.
+	 * @param side: side of tunnel on which you are
+	 * @param entering: true if entering the tunnel, false if exiting
+	 */
+	public void tunnelLocalization(Tunnel side, boolean entering) {
+		switch (side) {
+		case LEFT:
+			nav.turnTo(0); // localize to a black line perpendicular to tunnel
+			lightCorrection();
+			odo.setY(RingRetriever.tunnelLLy+1);
+			nav.move(true, true, false, true, RingRetriever.HALF_TILE_SIZE, RingRetriever.FORWARD_SPEED); // move backwards
+			if (entering) { // turn towards tunnel
+				nav.rotate(true, 90, true);
+				lightCorrection();
+				odo.setX(RingRetriever.tunnelLLx-1);
+			} else { // turn away from tunnel
+				nav.rotate(false, 90, true);
+				lightCorrection();
+				odo.setX(RingRetriever.tunnelLLx-2);
+			}
+			break;
+		case RIGHT:
+			nav.turnTo(0); // localize to a black line perpendicular to tunnel
+			lightCorrection();
+			odo.setY(RingRetriever.tunnelURy);
+			nav.move(true, true, false, true, RingRetriever.HALF_TILE_SIZE, RingRetriever.FORWARD_SPEED);
+			if (entering) { // turn towards tunnel
+				nav.rotate(false, 90, true);
+				lightCorrection();
+				odo.setX(RingRetriever.tunnelURx+1);
+			} else { // turn away from tunnel
+				nav.rotate(true, 90, true);
+				lightCorrection();
+				odo.setX(RingRetriever.tunnelURx+2);
+			}
+			break;
+		case ABOVE:
+			nav.turnTo(90); // localize to a black line perpendicular to tunnel
+			lightCorrection();
+			odo.setX(RingRetriever.tunnelURx);
+			nav.move(true, true, false, true, RingRetriever.HALF_TILE_SIZE, RingRetriever.FORWARD_SPEED);
+			if (entering) { // turn towards tunnel
+				nav.rotate(true, 90, true);
+				lightCorrection();
+				odo.setY(RingRetriever.tunnelURy+1);
+			} else { // turn away from tunnel
+				nav.rotate(false, 90, true);
+				lightCorrection();
+				odo.setY(RingRetriever.tunnelURy+2);
+			}
+			break;
+		case BELOW:
+			nav.turnTo(90); // localize to a black line perpendicular to tunnel
+			lightCorrection();
+			odo.setX(RingRetriever.tunnelLLx+1);
+			nav.move(true, true, false, true, RingRetriever.HALF_TILE_SIZE, RingRetriever.FORWARD_SPEED);
+			if (entering) { // turn towards tunnel
+				nav.rotate(false, 90, true);
+				lightCorrection();
+				odo.setY(RingRetriever.tunnelLLy-1);
+			} else { // turn away from tunnel
+				nav.rotate(true, 90, true);
+				lightCorrection();
+				odo.setY(RingRetriever.tunnelLLy-2);
+			}
+			break;
 		}
 	}
 	

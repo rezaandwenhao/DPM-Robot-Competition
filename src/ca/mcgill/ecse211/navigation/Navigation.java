@@ -8,6 +8,7 @@
  * 
  */package ca.mcgill.ecse211.navigation;
 
+import ca.mcgill.ecse211.main.RingRetriever;
 import ca.mcgill.ecse211.odometer.Odometer;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
 
@@ -19,9 +20,6 @@ import lejos.hardware.motor.EV3LargeRegulatedMotor;
  * This class is used to drive the robot on the demo floor.
  */
 public class Navigation {
-	public static final int FORWARD_SPEED = 150;
-	private static final int ROTATE_SPEED = 70;
-	private static final double TILE_SIZE = 30.48;
 	  
 	private EV3LargeRegulatedMotor motorL;
 	private EV3LargeRegulatedMotor motorR;
@@ -47,15 +45,15 @@ public class Navigation {
 	 * The angle that the robot needs to turn is calculated in the turnTo method which is called.
 	 * Rotates the robot to face the direction in which it needs to travel to.
 	 * Then rotates the wheels the exact distance from the current position to using the move method.
-	 * @param x: x coordinate of destination
-	 * @param y: y coordinate of destination
+	 * @param x (tiles): x coordinate of destination
+	 * @param y (tiles): y coordinate of destination
 	 */
 	public void travelTo(double x, double y) {  
 		double currentPos[] = odo.getXYT();
 		  
 		//difference in position
-		double deltaX = x*TILE_SIZE-currentPos[0];
-		double deltaY = y*TILE_SIZE-currentPos[1];
+		double deltaX = x*RingRetriever.TILE_SIZE-currentPos[0];
+		double deltaY = y*RingRetriever.TILE_SIZE-currentPos[1];
 	  
 		// length of straight line from current position to desired position
 		double hypotenuse = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
@@ -72,7 +70,7 @@ public class Navigation {
 		turnTo(desiredAngle);
 	  
 		//move forwards to reach the point x,y.
-		move(true, true, true, true, hypotenuse, FORWARD_SPEED);
+		move(true, true, true, true, hypotenuse, RingRetriever.FORWARD_SPEED);
 	}
 	  
 	/**
@@ -88,8 +86,8 @@ public class Navigation {
 		} else if (toRotate < -180.0d) {
 			toRotate += 360.0d;
 		}
-		motorL.setSpeed(ROTATE_SPEED);
-	    motorR.setSpeed(ROTATE_SPEED);
+		motorL.setSpeed(RingRetriever.ROTATE_SPEED);
+	    motorR.setSpeed(RingRetriever.ROTATE_SPEED);
 	      
 		motorL.rotate(convertAngle(leftRadius, track, toRotate), true);
 	    motorR.rotate(-convertAngle(rightRadius, track, toRotate), false);
@@ -102,8 +100,8 @@ public class Navigation {
 	 * @param wait: a Boolean that if true the robot should wait for the rotation to terminate before doing anything else.
 	 */
 	public void rotate(boolean clockwise, int angle, boolean wait) {
-		motorL.setSpeed(ROTATE_SPEED);
-	    motorR.setSpeed(ROTATE_SPEED);
+		motorL.setSpeed(RingRetriever.ROTATE_SPEED);
+	    motorR.setSpeed(RingRetriever.ROTATE_SPEED);
 		if (clockwise) {
 			motorL.rotate(convertAngle(leftRadius, track, angle), true);
 		    motorR.rotate(-convertAngle(rightRadius, track, angle), !wait);
@@ -120,6 +118,8 @@ public class Navigation {
 	 * @param rightMotor: a Boolean that if true signifies that the right motor should be used
 	 * @param forward: a Boolean that if true signifies that the robot should move forward, and if false the robot should move backwards
 	 * @param wait: if the robot should wait for the rotation to terminate before doing anything else.
+	 * @param distance (cm)
+	 * @param speed
 	 */
 	public void move(boolean leftMotor, boolean rightMotor, 
 			boolean forward, boolean wait, 
