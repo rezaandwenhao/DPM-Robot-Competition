@@ -9,6 +9,7 @@ import ca.mcgill.ecse211.odometer.Odometer;
 import ca.mcgill.ecse211.odometer.OdometerExceptions;
 import ca.mcgill.ecse211.wifi.Wifi;
 import lejos.hardware.Button;
+import lejos.hardware.Sound;
 import lejos.hardware.ev3.LocalEV3;
 import lejos.hardware.lcd.TextLCD;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
@@ -50,6 +51,8 @@ public class RingRetriever {
 	public static int ringsety;
 	public static Tunnel tunnelEntrance;
 	public static Tunnel tunnelExit;
+	public static double[] tunnelEntranceCoordinates;
+	public static double[] tunnelExitCoordinates;
 
 	
 	// Parameters
@@ -62,6 +65,8 @@ public class RingRetriever {
 	public static final int ROTATE_SPEED = 70;
 	public static final double TILE_SIZE = 30.48;
 	public static final double HALF_TILE_SIZE = 15.24;
+	public static final int BOARD_WIDTH = 15;
+	public static final int BOARD_HEIGHT = 9;
 	
 	// Objects
 	private static final EV3LargeRegulatedMotor leftMotor = 
@@ -132,18 +137,20 @@ public class RingRetriever {
 		odometer.setStartingCoordinates(startingCorner);
 		
 		// navigate to tunnel
-		double entranceCoordinates[] = getTunnelEntrancePoint(odometer.getXYT()[0], odometer.getXYT()[1], tunnelLLx, tunnelLLy, tunnelURx, tunnelURy);
-		nav.travelTo(entranceCoordinates[0], entranceCoordinates[1]);
+		// entranceInfo is X,Y,THETA where THETA is the angle of the entrance to the tunnel
+		double[] entranceInfo = getEntrance();
+		nav.travelTo(entranceInfo[0], entranceInfo[1]);
 		
 		// localize to "entrance" of tunnel
-		ll.tunnelLocalization(tunnelEntrance, true);
+		ll.tunnelLocalization(entranceInfo);
 		
 		// move through tunnel
 		//TODO: Adjust speed of robot when going up into and back down out of the tunnel
 		nav.move(true, true, true, true, TILE_SIZE*4, ROTATE_SPEED);		
 		
 		// localize to exit of tunnel
-		ll.tunnelLocalization(tunnelExit, false);
+		double[] exitInfo = getExit();
+		ll.tunnelLocalization(exitInfo);
 		
 		// navigate to tree
 		nav.travelTo(ringsetx, ringsety);
@@ -192,61 +199,194 @@ public class RingRetriever {
 	}
 	
 	/**
-	 * Returns the coordinates of the "entrance of the tunnel".
-	 * This is defined as the point in the middle of the square in front of the tunnel such that there remains a
-	 * black line between the point and the tunnel.
-	 * We will use this black line to correct our orientation before entering the tunnel.
-	 * @param tunnelLLx
-	 * @param tunnelLLy
-	 * @param tunnelURx
-	 * @param tunnelURy
-	 * @return coordinates of entrance in tiles (not cm)
+	 * 
+	 * @return coordinates of entrance of tunnel
+	 * Tested on 11/10/2018 by Eliott Bourachot
 	 */
-	public static double[] getTunnelEntrancePoint(double curposx, double curposy, int tunnelLLx, int tunnelLLy, int tunnelURx, int tunnelURy) {
-		double[] entranceCoordinates = {0,0};
+	public static double[] getEntrance() {
+		double[] coordinates = {0,0,0};
 		
-		int xDelta = tunnelURx-tunnelLLx;
-		int yDelta = tunnelURy-tunnelLLy;
-		if (xDelta > yDelta) {
-			// tunnel is oriented horizontally
-			if (curposx < tunnelLLx) {
-				// the robot is to the left of the tunnel
-				tunnelEntrance = Tunnel.LEFT;
-				tunnelExit = Tunnel.RIGHT;
-				entranceCoordinates[0] = tunnelLLx-1.5; // entrance point is left of tunnel
-				entranceCoordinates[1] = tunnelLLy+0.5; 
-			} else if (curposx > tunnelURx) {
-				// the robot is to the right of the tunnel
-				tunnelEntrance = Tunnel.RIGHT;
-				tunnelExit = Tunnel.LEFT;
-				entranceCoordinates[0] = tunnelURx+1.5; // entrance point is right of tunnel
-				entranceCoordinates[1] = tunnelURy-0.5;
+		boolean rightSide = isTunnelAtRelativeRight(); // true if tunnel is determined to be on the right side of our zone
+		
+		switch (startingCorner) {
+		case 0:
+			if (rightSide) {
+				coordinates[0] = tunnelLLx-1.5;
+				coordinates[1] = tunnelLLy+0.5;
+				coordinates[2] = 90;
 			} else {
-				// the robot is in the water probably
+				coordinates[0] = tunnelLLx+0.5;
+				coordinates[1] = tunnelLLy-1.5;
+				coordinates[2] = 0;
 			}
-		} else if (yDelta > xDelta) {
-			// tunnel is oriented vertically
-			if (curposy > tunnelURy) {
-				// the robot is above the top of the tunnel
-				tunnelEntrance = Tunnel.ABOVE;
-				tunnelExit = Tunnel.BELOW;
-				entranceCoordinates[0] = tunnelURx-0.5; // entrance point is above tunnel
-				entranceCoordinates[1] = tunnelURy+1.5;
-			} else if (curposy < tunnelLLy) {
-				// the robot is below the bottom of the tunnel
-				tunnelEntrance = Tunnel.BELOW;
-				tunnelExit = Tunnel.ABOVE;
-				entranceCoordinates[0] = tunnelLLx+0.5; // entrance point is below tunnel
-				entranceCoordinates[1] = tunnelLLy-1.5;
+			break;
+		case 1:
+			if (rightSide) {
+				coordinates[0] = tunnelLLx+0.5;
+				coordinates[1] = tunnelLLy-1.5;
+				coordinates[2] = 0;
 			} else {
-				// the robot is in the water probably
+				coordinates[0] = tunnelURx+1.5;
+				coordinates[1] = tunnelURy-0.5;
+				coordinates[2] = -90;
 			}
-		} else {
-			// error with given coordinates, both tunnels cannot be oriented the same way
+			break;
+		case 2:
+			if (rightSide) {
+				coordinates[0] = tunnelURx+1.5;
+				coordinates[1] = tunnelURy-0.5;
+				coordinates[2] = -90;
+			} else {
+				coordinates[0] = tunnelURx-0.5;
+				coordinates[1] = tunnelURy+1.5;
+				coordinates[2] = 180;
+			}
+			break;
+		case 3:
+			if (rightSide) {
+				coordinates[0] = tunnelURx-0.5;
+				coordinates[1] = tunnelURy+1.5;
+				coordinates[2] = 180;
+			} else {
+				coordinates[0] = tunnelLLx-1.5;
+				coordinates[1] = tunnelLLy+0.5;
+				coordinates[2] = 90;
+			}
+			break;
+		}
+		return coordinates;
+	}
+	
+	/**
+	 * 
+	 * @return
+	 * Tested on 11/10/2018 by Eliott Bourachot
+	 */
+	public static double[] getExit() {
+		double[] coordinates = {0,0,0};
+	
+		boolean rightSide = isTunnelAtRelativeRight(); // true if tunnel is determined to be on the right (relative) side of our zone
+		
+		switch (startingCorner) {
+		case 0:
+			if (rightSide) {
+				coordinates[0] = tunnelURx+1.5;
+				coordinates[1] = tunnelURy-0.5;
+				coordinates[2] = -90;
+			} else {
+				coordinates[0] = tunnelURx-0.5;
+				coordinates[1] = tunnelURy+1.5;
+				coordinates[2] = 180;
+			}
+			break;
+		case 1:
+			if (rightSide) {
+				coordinates[0] = tunnelURx-0.5;
+				coordinates[1] = tunnelURy+1.5;
+				coordinates[2] = 180;
+			} else {
+				coordinates[0] = tunnelLLx-1.5;
+				coordinates[1] = tunnelLLy+0.5;
+				coordinates[2] = 90;
+			}
+			break;
+		case 2:
+			if (rightSide) {
+				coordinates[0] = tunnelLLx-1.5;
+				coordinates[1] = tunnelLLy+0.5;
+				coordinates[2] = 90;
+			} else {
+				coordinates[0] = tunnelLLx+0.5;
+				coordinates[1] = tunnelLLy-1.5;
+				coordinates[2] = 0;
+			}
+			break;
+		case 3:
+			if (rightSide) {
+				coordinates[0] = tunnelLLx+0.5;
+				coordinates[1] = tunnelLLy-1.5;
+				coordinates[2] = 0;
+			} else {
+				coordinates[0] = tunnelURx+1.5;
+				coordinates[1] = tunnelURy-0.5;
+				coordinates[2] = -90;
+			}
+			break;
+		}
+		return coordinates;
+	}
+	
+	/**
+	 * 
+	 * @return
+	 * Tested on 11/10/2018 by Eliott Bourachot
+	 */
+	private static boolean isTunnelAtRelativeRight() {
+		boolean rightSide = false;
+		
+		int maxLen = getMaxTunnelLength();
+
+		// determine coordinates of all zones which correspond to the coordinates for corner 0
+		// i.e. for corner 0, all of these will be unchanged, for corner 1, x and y will be swapped, etc...
+		int rel_tunnelLLx = tunnelLLx;
+		int rel_tunnelLLy = tunnelLLy;
+		int rel_tunnelURx = tunnelURx;
+		int rel_zoneURx = zoneURx;
+		int rel_zoneURy = zoneURy;
+		
+		switch (startingCorner) {
+		case 0: // x -> x, y -> y
+			rel_tunnelLLx = tunnelLLx;
+			rel_tunnelLLy = tunnelLLy;
+			rel_tunnelURx = tunnelURx;
+			rel_zoneURx = zoneURx;
+			rel_zoneURy = zoneURy;
+			break;
+		case 1: // x -> y and y -> -x
+			rel_tunnelLLx = tunnelLLy; 
+			rel_tunnelLLy = BOARD_WIDTH-tunnelURx;
+			rel_tunnelURx = tunnelURy;
+			rel_zoneURx = zoneURy;
+			rel_zoneURy = BOARD_WIDTH-zoneLLx;
+			break;
+		case 2: // x -> -x, y -> -y
+			rel_tunnelLLx = BOARD_WIDTH-tunnelURx;
+			rel_tunnelLLy = BOARD_HEIGHT-tunnelURy;
+			rel_tunnelURx = BOARD_WIDTH-tunnelLLx;
+			rel_zoneURx = BOARD_WIDTH-zoneLLx;
+			rel_zoneURy = BOARD_HEIGHT-zoneLLy;
+			break;
+		case 3: // x -> -y, y -> x
+			rel_tunnelLLx = BOARD_HEIGHT-tunnelURy;
+			rel_tunnelLLy = tunnelLLx;
+			rel_tunnelURx = BOARD_HEIGHT-tunnelLLy;
+			rel_zoneURx = BOARD_HEIGHT-zoneLLy;
+			rel_zoneURy = zoneURx;
+			break;
 		}
 		
-		return entranceCoordinates;
+		// see diagram A for cases
+		if (rel_tunnelLLx < rel_zoneURx-1) rightSide = false; // case 1
+		else if (rel_tunnelLLy < rel_zoneURy-1) rightSide = true; // case 2
+		else if (rel_tunnelLLx == rel_zoneURx && rel_tunnelLLy > rel_zoneURy-2) rightSide = true; // case 3 
+		else if (maxLen == 1) rightSide = false; // case 4
+		else if (rel_tunnelURx - rel_tunnelLLx == 2) rightSide = true; // case 5.1
+		else rightSide = false; // case 5.2
+		
+		return rightSide;
 	}
+	
+	/**
+	 * 
+	 * @return
+	 * Tested on 11/10/2018 by Eliott Bourachot
+	 */
+	private static int getMaxTunnelLength() {
+		int x_len = Math.abs(tunnelURx - tunnelLLx);
+		int y_len = Math.abs(tunnelURy - tunnelURy);
+		return Math.max(x_len, y_len);
+	}
+	
 	
 	/**
 	 * 

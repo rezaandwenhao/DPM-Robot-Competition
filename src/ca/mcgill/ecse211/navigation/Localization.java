@@ -223,69 +223,72 @@ public class Localization {
 	 * @param side: side of tunnel on which you are
 	 * @param entering: true if entering the tunnel, false if exiting
 	 */
-	public void tunnelLocalization(Tunnel side, boolean entering) {
-		switch (side) {
-		case LEFT:
-			nav.turnTo(0); // localize to a black line perpendicular to tunnel
-			lightCorrection();
-			odo.setY(RingRetriever.tunnelLLy+1);
-			nav.move(true, true, false, true, RingRetriever.HALF_TILE_SIZE, RingRetriever.FORWARD_SPEED); // move backwards
-			if (entering) { // turn towards tunnel
-				nav.rotate(true, 90, true);
-				lightCorrection();
-				odo.setX(RingRetriever.tunnelLLx-1);
-			} else { // turn away from tunnel
-				nav.rotate(false, 90, true);
-				lightCorrection();
-				odo.setX(RingRetriever.tunnelLLx-2);
-			}
+	public void tunnelLocalization(double[] directionInfo) {
+		// localize to a black line perpendicular to tunnel
+		nav.turnTo(directionInfo[2]-90);
+		lightCorrection();
+		
+		//update odo TODO: think of better way to do this
+		switch (odo.getGeneralDirection()) {
+		case NORTH:
+			odo.setY(directionInfo[1]*RingRetriever.TILE_SIZE+RingRetriever.HALF_TILE_SIZE);
 			break;
-		case RIGHT:
-			nav.turnTo(0); // localize to a black line perpendicular to tunnel
-			lightCorrection();
-			odo.setY(RingRetriever.tunnelURy);
-			nav.move(true, true, false, true, RingRetriever.HALF_TILE_SIZE, RingRetriever.FORWARD_SPEED);
-			if (entering) { // turn towards tunnel
-				nav.rotate(false, 90, true);
-				lightCorrection();
-				odo.setX(RingRetriever.tunnelURx+1);
-			} else { // turn away from tunnel
-				nav.rotate(true, 90, true);
-				lightCorrection();
-				odo.setX(RingRetriever.tunnelURx+2);
-			}
+		case SOUTH:
+			odo.setY(directionInfo[1]*RingRetriever.TILE_SIZE-RingRetriever.HALF_TILE_SIZE);
 			break;
-		case ABOVE:
-			nav.turnTo(90); // localize to a black line perpendicular to tunnel
-			lightCorrection();
-			odo.setX(RingRetriever.tunnelURx);
-			nav.move(true, true, false, true, RingRetriever.HALF_TILE_SIZE, RingRetriever.FORWARD_SPEED);
-			if (entering) { // turn towards tunnel
-				nav.rotate(true, 90, true);
-				lightCorrection();
-				odo.setY(RingRetriever.tunnelURy+1);
-			} else { // turn away from tunnel
-				nav.rotate(false, 90, true);
-				lightCorrection();
-				odo.setY(RingRetriever.tunnelURy+2);
-			}
+		case EAST:
+			odo.setX(directionInfo[0]*RingRetriever.TILE_SIZE+RingRetriever.HALF_TILE_SIZE);
 			break;
-		case BELOW:
-			nav.turnTo(90); // localize to a black line perpendicular to tunnel
-			lightCorrection();
-			odo.setX(RingRetriever.tunnelLLx+1);
-			nav.move(true, true, false, true, RingRetriever.HALF_TILE_SIZE, RingRetriever.FORWARD_SPEED);
-			if (entering) { // turn towards tunnel
-				nav.rotate(false, 90, true);
-				lightCorrection();
-				odo.setY(RingRetriever.tunnelLLy-1);
-			} else { // turn away from tunnel
-				nav.rotate(true, 90, true);
-				lightCorrection();
-				odo.setY(RingRetriever.tunnelLLy-2);
-			}
+		case WEST:
+			odo.setX(directionInfo[0]*RingRetriever.TILE_SIZE-RingRetriever.HALF_TILE_SIZE);
+			break;
+		default:
+			break;
+		}
+		
+		nav.move(true, true, false, true, RingRetriever.HALF_TILE_SIZE, RingRetriever.FORWARD_SPEED); // move backwards
+		nav.turnTo(directionInfo[2]);
+		lightCorrection();
+		
+		//update odo TODO: think of better way to do this
+		switch (odo.getGeneralDirection()) {
+		case NORTH:
+			odo.setY(directionInfo[1]*RingRetriever.TILE_SIZE+RingRetriever.HALF_TILE_SIZE);
+			break;
+		case SOUTH:
+			odo.setY(directionInfo[1]*RingRetriever.TILE_SIZE-RingRetriever.HALF_TILE_SIZE);
+			break;
+		case EAST:
+			odo.setX(directionInfo[0]*RingRetriever.TILE_SIZE+RingRetriever.HALF_TILE_SIZE);
+			break;
+		case WEST:
+			odo.setX(directionInfo[0]*RingRetriever.TILE_SIZE-RingRetriever.HALF_TILE_SIZE);
+			break;
+		default:
 			break;
 		}
 	}
 	
+	/**
+	 * 
+	 * @param x
+	 * @return true if location is in a zone, false if in water or past wall
+	 */
+	private boolean isLocationAvailable(double x, double y) {
+		boolean available = true;
+		
+		double zoneURx = RingRetriever.zoneURx*RingRetriever.TILE_SIZE;
+		double zoneURy = RingRetriever.zoneURy*RingRetriever.TILE_SIZE;
+		double zoneLLx = RingRetriever.zoneLLx*RingRetriever.TILE_SIZE;
+		double zoneLLy = RingRetriever.zoneLLy*RingRetriever.TILE_SIZE;
+		double islandURx = RingRetriever.islandLLx*RingRetriever.TILE_SIZE;
+		double islandURy = RingRetriever.islandURy*RingRetriever.TILE_SIZE;
+		double islandLLx = RingRetriever.islandLLx*RingRetriever.TILE_SIZE;
+		double islandLLy = RingRetriever.islandLLy*RingRetriever.TILE_SIZE;
+
+		if (x < zoneURx && y < zoneURy && x > zoneLLx && y > zoneLLy) return available;
+		if (x < islandURx && y < islandURy && x > islandLLx && y > islandLLy) return available;
+		
+		return false;
+	}	
 }

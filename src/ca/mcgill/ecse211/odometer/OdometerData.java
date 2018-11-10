@@ -17,9 +17,11 @@ import java.util.concurrent.locks.ReentrantLock;
 public class OdometerData {
 
   // Position parameters
-  private volatile double x; // x-axis position
-  private volatile double y; // y-axis position
+  private volatile double x; // x-axis position in cm
+  private volatile double y; // y-axis position in cm
   private volatile double theta; // Head angle
+  
+  public enum Direction {NORTH, SOUTH, EAST, WEST};
 
   // Class control variables
   private volatile static int numberOfInstances = 0; // Number of OdometerData
@@ -178,7 +180,7 @@ public class OdometerData {
   /**
    * Overrides y. Use for odometry correction.
    * 
-   * @param y the value of y
+   * @param y the value of y in cm
    */
   public void setY(double y) {
     lock.lock();
@@ -209,6 +211,20 @@ public class OdometerData {
     } finally {
       lock.unlock();
     }
+  }
+  
+  public Direction getGeneralDirection() {
+	  if (-10 < this.theta && this.theta < 10) {
+		  return Direction.NORTH;
+	  } else if (170 < this.theta && this.theta < 190) {
+		  return Direction.SOUTH;
+	  } else if (80 < this.theta && this.theta < 100) {
+		  return Direction.EAST;
+	  } else if (260 < this.theta && this.theta < 280) {
+		  return Direction.WEST;
+	  } else {
+		  return null;
+	  }
   }
 
 }
