@@ -38,15 +38,12 @@ public class Localization {
 	private static final int CORRECTION_TIMEOUT = 3000;
 	private static final int VOID_THRESHOLD = 30;
 	private static final int VOID_BAND = 3;
-	private static final int R_COLOR_THRESHOLD = 17;
-	private static final int L_COLOR_THRESHOLD = 28;
+	private static final int R_COLOR_THRESHOLD = 20;
+	private static final int L_COLOR_THRESHOLD = 17;
 
-	private static final int LIGHT_X_OFFSET = 5;
-	private static final int LIGHT_Y_OFFSET = 5;
 	
 	// Global variables
 	private boolean pastView = false;
-	int placementOffset = 90;
 	
 	public Localization(SampleProvider lightMeanL, SampleProvider lightMeanR, SampleProvider usMean, 
 			float[] lightDataL, float[] lightDataR, float[] usData, Navigation nav, Odometer odo, TextLCD lcd) {
@@ -102,7 +99,7 @@ public class Localization {
 
 		double deltaTheta = getHeading(angle1, angle2);
 		
-		odo.setTheta(deltaTheta+odo.getXYT()[2]-placementOffset);
+		odo.setTheta(deltaTheta+odo.getXYT()[2]-RingRetriever.ULTRASONIC_OFFSET);
 		
 		nav.turnTo(0);
 	}
@@ -212,7 +209,7 @@ public class Localization {
 	}
 
 	/**
-	 * ATTENTION: REQUIRES ROBOT TO BE AT "ENTRANCE" OF TUNNEL!!!
+	 * ATTENTION: REQUIRES ROBOT TO BE AT "ENTRANCE" OR "EXIT" OF TUNNEL!!!
 	 * 1. rotate to known angle
 	 * 2. correct angle by light correcting
 	 * 3. go to middle of square
@@ -223,50 +220,24 @@ public class Localization {
 	 * @param side: side of tunnel on which you are
 	 * @param entering: true if entering the tunnel, false if exiting
 	 */
-	public void tunnelLocalization(double[] directionInfo) {
+	public void tunnelLocalization(double[] directionInfo, boolean entering) {
 		// localize to a black line perpendicular to tunnel
 		nav.turnTo(directionInfo[2]-90);
 		lightCorrection();
 		
-		//update odo TODO: think of better way to do this
-		switch (odo.getGeneralDirection()) {
-		case NORTH:
-			odo.setY(directionInfo[1]*RingRetriever.TILE_SIZE+RingRetriever.HALF_TILE_SIZE);
-			break;
-		case SOUTH:
-			odo.setY(directionInfo[1]*RingRetriever.TILE_SIZE-RingRetriever.HALF_TILE_SIZE);
-			break;
-		case EAST:
-			odo.setX(directionInfo[0]*RingRetriever.TILE_SIZE+RingRetriever.HALF_TILE_SIZE);
-			break;
-		case WEST:
-			odo.setX(directionInfo[0]*RingRetriever.TILE_SIZE-RingRetriever.HALF_TILE_SIZE);
-			break;
-		default:
-			break;
-		}
 		
-		nav.move(true, true, false, true, RingRetriever.HALF_TILE_SIZE, RingRetriever.FORWARD_SPEED); // move backwards
+		nav.move(true, true, false, true, RingRetriever.HALF_TILE_SIZE-RingRetriever.LIGHT_SENSOR_Y_OFFSET, RingRetriever.FORWARD_SPEED); // move backwards
 		nav.turnTo(directionInfo[2]);
 		lightCorrection();
-		
-		//update odo TODO: think of better way to do this
-		switch (odo.getGeneralDirection()) {
-		case NORTH:
-			odo.setY(directionInfo[1]*RingRetriever.TILE_SIZE+RingRetriever.HALF_TILE_SIZE);
-			break;
-		case SOUTH:
-			odo.setY(directionInfo[1]*RingRetriever.TILE_SIZE-RingRetriever.HALF_TILE_SIZE);
-			break;
-		case EAST:
-			odo.setX(directionInfo[0]*RingRetriever.TILE_SIZE+RingRetriever.HALF_TILE_SIZE);
-			break;
-		case WEST:
-			odo.setX(directionInfo[0]*RingRetriever.TILE_SIZE-RingRetriever.HALF_TILE_SIZE);
-			break;
-		default:
-			break;
-		}
+
+        if (!entering) {
+          nav.move(true, true, false, true, RingRetriever.HALF_TILE_SIZE-RingRetriever.LIGHT_SENSOR_Y_OFFSET, RingRetriever.FORWARD_SPEED); // move backwards
+
+          odo.setTheta(directionInfo[2]);
+          odo.setX(directionInfo[0]*RingRetriever.TILE_SIZE);
+          odo.setY(directionInfo[1]*RingRetriever.TILE_SIZE);
+        }
+
 	}
 	
 	/**

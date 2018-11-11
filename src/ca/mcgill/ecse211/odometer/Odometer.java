@@ -150,20 +150,18 @@ public class Odometer extends OdometerData implements Runnable {
   }
 
   public void setStartingCoordinates(int startingCorner) {
-	double x_off = RingRetriever.LIGHT_SENSOR_X_OFFSET;
-	double y_off = RingRetriever.LIGHT_SENSOR_Y_OFFSET;
     switch (startingCorner) {
     case 0:
-    	odo.update(1-x_off, 1-y_off, 0);
+    	odo.update(RingRetriever.TILE_SIZE, RingRetriever.TILE_SIZE, 0);
     	break;
     case 1:
-    	odo.update(14-x_off, 1-y_off, -90);
+    	odo.update((RingRetriever.BOARD_WIDTH-1)*RingRetriever.TILE_SIZE, RingRetriever.TILE_SIZE, -90);
     	break;
     case 2:
-    	odo.update(14-x_off, 8-y_off, 180);
+    	odo.update((RingRetriever.BOARD_WIDTH-1)*RingRetriever.TILE_SIZE, (RingRetriever.BOARD_HEIGHT-1)*RingRetriever.TILE_SIZE, 180);
     	break;
     case 3:
-    	odo.update(1-x_off, 8-y_off, 90);
+    	odo.update(RingRetriever.TILE_SIZE, (RingRetriever.BOARD_HEIGHT-1)*RingRetriever.TILE_SIZE, 90);
     	break;
     default:
     	break;

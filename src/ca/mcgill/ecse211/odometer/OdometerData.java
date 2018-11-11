@@ -113,9 +113,9 @@ public class OdometerData {
    * Adds dx, dy and dtheta to the current values of x, y and theta, respectively. Useful for
    * odometry.
    * 
-   * @param dx
-   * @param dy
-   * @param dtheta
+   * @param dx in cm
+   * @param dy in cm
+   * @param dtheta in cm
    */
   public void update(double dx, double dy, double dtheta) {
     lock.lock();

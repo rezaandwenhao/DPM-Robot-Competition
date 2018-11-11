@@ -65,15 +65,16 @@ public class RingRetriever {
 	public static final int ROTATE_SPEED = 70;
 	public static final double TILE_SIZE = 30.48;
 	public static final double HALF_TILE_SIZE = 15.24;
-	public static final int BOARD_WIDTH = 15;
-	public static final int BOARD_HEIGHT = 9;
+	public static final int BOARD_WIDTH = 8;
+	public static final int BOARD_HEIGHT = 8;
+	public static final int ULTRASONIC_OFFSET = -90;
 	
 	// Objects
 	private static final EV3LargeRegulatedMotor leftMotor = 
-			new EV3LargeRegulatedMotor(LocalEV3.get().getPort("C"));
+			new EV3LargeRegulatedMotor(LocalEV3.get().getPort("B"));
 	private static final EV3LargeRegulatedMotor rightMotor =
-			new EV3LargeRegulatedMotor(LocalEV3.get().getPort("D"));
-	private static final Port usPort = LocalEV3.get().getPort("S2");
+			new EV3LargeRegulatedMotor(LocalEV3.get().getPort("C"));
+	private static final Port usPort = LocalEV3.get().getPort("S3");
 	private static final Port lightLPort = LocalEV3.get().getPort("S1");
 	private static final Port lightRPort = LocalEV3.get().getPort("S4");
 	private static final TextLCD lcd = LocalEV3.get().getTextLCD();
@@ -142,15 +143,17 @@ public class RingRetriever {
 		nav.travelTo(entranceInfo[0], entranceInfo[1]);
 		
 		// localize to "entrance" of tunnel
-		ll.tunnelLocalization(entranceInfo);
+		ll.tunnelLocalization(entranceInfo, true);
 		
 		// move through tunnel
-		//TODO: Adjust speed of robot when going up into and back down out of the tunnel
-		nav.move(true, true, true, true, TILE_SIZE*4, ROTATE_SPEED);		
+	    nav.move(true, true, true, true, TILE_SIZE, FORWARD_SPEED);        
+	    nav.move(true, true, true, true, TILE_SIZE, ROTATE_SPEED); 
+	    nav.move(true, true, true, true, TILE_SIZE*3-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED); 
 		
 		// localize to exit of tunnel
 		double[] exitInfo = getExit();
-		ll.tunnelLocalization(exitInfo);
+		exitInfo[2] = exitInfo[2]-180; // to have robot end point away from tunnel
+		ll.tunnelLocalization(exitInfo, false);
 		
 		// navigate to tree
 		nav.travelTo(ringsetx, ringsety);
@@ -167,35 +170,35 @@ public class RingRetriever {
 	}
 	
 	public static void fillGlobalData(Map data) {
-		if ((int)data.get("RedTeam") == Wifi.TEAM_NUMBER) {
-			startingCorner = (int)data.get("RedCorner");
-			zoneLLx = (int)data.get("Red_LL_x");
-			zoneLLy = (int)data.get("Red_LL_y");
-			zoneURx = (int)data.get("Red_UR_x");
-			zoneURy = (int)data.get("Red_UR_y");
-			tunnelLLx = (int)data.get("TNR_LL_x");
-			tunnelLLy = (int)data.get("TNR_LL_y");
-			tunnelURx = (int)data.get("TNR_UR_x");
-			tunnelURy = (int)data.get("TNR_UR_y");
-			ringsetx = (int)data.get("TR_x");
-			ringsety = (int)data.get("TR_y");
-		} else if ((int)data.get("GreenTeam") == Wifi.TEAM_NUMBER) {
-			startingCorner = (int)data.get("GreenCorner");
-			zoneLLx = (int)data.get("Green_LL_x");
-			zoneLLy = (int)data.get("Green_LL_y");
-			zoneURx = (int)data.get("Green_UR_x");
-			zoneURy = (int)data.get("Green_UR_y");
-			tunnelLLx = (int)data.get("TNG_LL_x");
-			tunnelLLy = (int)data.get("TNG_LL_y");
-			tunnelURx = (int)data.get("TNG_UR_x");
-			tunnelURy = (int)data.get("TNG_UR_y");
-			ringsetx = (int)data.get("TG_x");
-			ringsety = (int)data.get("TG_y");
+		if (((Long) data.get("RedTeam")).intValue()== Wifi.TEAM_NUMBER) {
+			startingCorner = ((Long)data.get("RedCorner")).intValue();
+			zoneLLx = ((Long)data.get("Red_LL_x")).intValue();
+			zoneLLy = ((Long)data.get("Red_LL_y")).intValue();
+			zoneURx = ((Long)data.get("Red_UR_x")).intValue();
+			zoneURy = ((Long)data.get("Red_UR_y")).intValue();
+			tunnelLLx = ((Long)data.get("TNR_LL_x")).intValue();
+			tunnelLLy = ((Long)data.get("TNR_LL_y")).intValue();
+			tunnelURx = ((Long)data.get("TNR_UR_x")).intValue();
+			tunnelURy = ((Long)data.get("TNR_UR_y")).intValue();
+			ringsetx = ((Long)data.get("TR_x")).intValue();
+			ringsety = ((Long)data.get("TR_y")).intValue();
+		} else if (((Long) data.get("GreenTeam")).intValue()== Wifi.TEAM_NUMBER) {
+            startingCorner = ((Long)data.get("GreenCorner")).intValue();
+            zoneLLx = ((Long)data.get("Green_LL_x")).intValue();
+            zoneLLy = ((Long)data.get("Green_LL_y")).intValue();
+            zoneURx = ((Long)data.get("Green_UR_x")).intValue();
+            zoneURy = ((Long)data.get("Green_UR_y")).intValue();
+            tunnelLLx = ((Long)data.get("TNG_LL_x")).intValue();
+            tunnelLLy = ((Long)data.get("TNG_LL_y")).intValue();
+            tunnelURx = ((Long)data.get("TNG_UR_x")).intValue();
+            tunnelURy = ((Long)data.get("TNG_UR_y")).intValue();
+            ringsetx = ((Long)data.get("TG_x")).intValue();
+            ringsety = ((Long)data.get("TG_y")).intValue();
 		}
-		islandLLx = (int)data.get("Island_LL_x");
-		islandLLy = (int)data.get("Island_LL_y");
-		islandURx = (int)data.get("Island_UR_x");
-		islandURy = (int)data.get("Island_UR_y");
+		islandLLx = ((Long)data.get("Island_LL_x")).intValue();
+		islandLLy = ((Long)data.get("Island_LL_y")).intValue();
+		islandURx = ((Long)data.get("Island_UR_x")).intValue();
+		islandURy = ((Long)data.get("Island_UR_y")).intValue();
 	}
 	
 	/**
