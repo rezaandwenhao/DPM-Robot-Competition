@@ -59,7 +59,7 @@ public class RingRetriever {
 	public static final double WHEEL_RAD = 2.13; // (cm) measured with caliper
 	public static final double TRACK = 16.8; // (cm) measured with caliper
 	public static final double LIGHT_SENSOR_X_OFFSET = 3.5;
-	public static final double LIGHT_SENSOR_Y_OFFSET = 4.75;
+	public static final double LIGHT_SENSOR_Y_OFFSET = 8;
 	
 	public static final int FORWARD_SPEED = 150;
 	public static final int ROTATE_SPEED = 70;
