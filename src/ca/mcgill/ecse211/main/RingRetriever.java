@@ -13,10 +13,12 @@ import lejos.hardware.Sound;
 import lejos.hardware.ev3.LocalEV3;
 import lejos.hardware.lcd.TextLCD;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
+import lejos.hardware.motor.EV3MediumRegulatedMotor;
 import lejos.hardware.port.Port;
 import lejos.hardware.sensor.EV3ColorSensor;
 import lejos.hardware.sensor.EV3UltrasonicSensor;
 import lejos.hardware.sensor.SensorModes;
+import lejos.robotics.Color;
 import lejos.robotics.SampleProvider;
 import lejos.robotics.filter.MeanFilter;
 
@@ -74,9 +76,12 @@ public class RingRetriever {
 			new EV3LargeRegulatedMotor(LocalEV3.get().getPort("B"));
 	private static final EV3LargeRegulatedMotor rightMotor =
 			new EV3LargeRegulatedMotor(LocalEV3.get().getPort("C"));
+	private static final EV3MediumRegulatedMotor medMotor =
+			new EV3MediumRegulatedMotor(LocalEV3.get().getPort("A"));
 	private static final Port usPort = LocalEV3.get().getPort("S3");
 	private static final Port lightLPort = LocalEV3.get().getPort("S1");
 	private static final Port lightRPort = LocalEV3.get().getPort("S4");
+	private static final Port colorPort = LocalEV3.get().getPort("S2");
 	private static final TextLCD lcd = LocalEV3.get().getTextLCD();
 
 	
@@ -107,14 +112,14 @@ public class RingRetriever {
 		SampleProvider usMean = new MeanFilter(usSample, 5); // use a mean filter to reduce fluctuations
 	    float[] usData = new float[usMean.sampleSize()]; // usData is the buffer in which data are returned
 	    
-	    // Initializing Ultrasonic Sensor and runs it in this thread
+	    // Initializing Left Light Sensor and runs it in this thread
  		@SuppressWarnings("resource") // Because we don't bother to close this resource
  		SensorModes lightLSensor = new EV3ColorSensor(lightLPort); // usSensor is the instance
  		SampleProvider lightLSample = lightLSensor.getMode("Red"); 
  		SampleProvider lightLMean = new MeanFilter(lightLSample, 5); // use a mean filter to reduce fluctuations
  	    float[] lightLData = new float[lightLMean.sampleSize()]; // usData is the buffer in which data are returned
 	    
- 	    // Initializing Ultrasonic Sensor and runs it in this thread
+ 	    // Initializing Right Light Sensor and runs it in this thread
  		@SuppressWarnings("resource") // Because we don't bother to close this resource
  		SensorModes lightRSensor = new EV3ColorSensor(lightRPort); // usSensor is the instance
  		SampleProvider lightRSample = lightRSensor.getMode("Red"); 
@@ -131,7 +136,7 @@ public class RingRetriever {
 	    nav.rotate(true, 90, true);
 	    ll.lightCorrection();
 	    odometer.setXYT(0-LIGHT_SENSOR_X_OFFSET, odometer.getXYT()[1], 90);
-	    nav.travelTo(0, 0);
+	    nav.travelTo(0, 0, true);
 	    nav.turnTo(0);
 	    
 	    // correct position depending on given start corner
@@ -140,7 +145,7 @@ public class RingRetriever {
 		// navigate to tunnel
 		// entranceInfo is X,Y,THETA where THETA is the angle of the entrance to the tunnel
 		double[] entranceInfo = getEntrance();
-		nav.travelTo(entranceInfo[0], entranceInfo[1]);
+		nav.travelTo(entranceInfo[0], entranceInfo[1], true);
 		
 		// localize to "entrance" of tunnel
 		ll.tunnelLocalization(entranceInfo, false);
@@ -148,8 +153,7 @@ public class RingRetriever {
 		// move through tunnel
 	    nav.move(true, true, true, true, TILE_SIZE, FORWARD_SPEED);        
 	    nav.move(true, true, true, true, TILE_SIZE, ROTATE_SPEED);
-		// brute force offset, turn left a bit in the tunnel
-		nav.move(false, true, true, true, 1, ROTATE_SPEED);
+		nav.move(false, true, true, true, 1, ROTATE_SPEED); // brute force offset, turn left a bit in the tunnel
 		nav.move(true, true, true, true, TILE_SIZE*3-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
 		
 		// localize to exit of tunnel
@@ -157,40 +161,130 @@ public class RingRetriever {
 		exitInfo[2] = exitInfo[2]-180; // reverse theta to have robot end point away from tunnel
 		ll.tunnelLocalization(exitInfo, true);
 		
-		// determine 4 points around tree
-		double[] bottomLeft = {ringsetx-0.5, ringsety-0.5};
-		double[] topLeft = {ringsetx-0.5, ringsety+0.5};
-		double[] topRight = {ringsetx+0.5, ringsety+0.5};
-		double[] bottomRight = {ringsetx+0.5, ringsety-0.5};
-		
-		// determine which is closest and determine a 'route'
+		// determine which point around the tree is closest and determine a 'route'
 		double[] startingPoint = {exitInfo[0], exitInfo[1]};
-		double[][] destinations = {bottomLeft, topLeft, topRight, bottomRight};
-		double[] route = getFastestRoute(startingPoint, destinations);
+		double[][] route = getFastestRoute(startingPoint);
 		
 		// navigate to tree
-		nav.travelTo(ringsetx, ringsety);
+		nav.travelTo(route[0][0], route[0][1], true);
+		
+		// Initializing Color Sensor and runs it in this thread
+ 		@SuppressWarnings("resource") // Because we don't bother to close this resource
+ 		SensorModes colorSensor = new EV3ColorSensor(lightRPort); // usSensor is the instance
+ 		SampleProvider colorSample = colorSensor.getMode("RGB"); 
+ 		SampleProvider colorMean = new MeanFilter(colorSample, 5); // use a mean filter to reduce fluctuations
+ 	    float[] colorData = new float[colorMean.sampleSize()]; // usData is the buffer in which data are returned
 		
 		// move light sensor to top row of rings height (should already be there ?)
 		
+ 	    // initialize ringArray which will be 4x2 array
+ 	    // the first [] corresponds to the route on which the ring was found
+ 	    // the second [] corresponds to the height at which the ring was found (0 being top and 1 being bottom)
+ 	    int ringArray[][] = { { Color.NONE, Color.NONE, Color.NONE, Color.NONE }, { Color.NONE, Color.NONE, Color.NONE, Color.NONE } };
+ 	    
 		// walk around tree to detect rings on top level
+		nav.travelTo(route[1][0], route[1][1], false);
+		while(leftMotor.isMoving() && rightMotor.isMoving()) {
+			if (ringArray[0][0] == Color.NONE) {
+				ringArray[0][0] = detectRing(colorMean, colorData);
+			}
+		}
+		nav.travelTo(route[2][0], route[2][1], false);
+		while(leftMotor.isMoving() && rightMotor.isMoving()) {
+			if (ringArray[1][0] == Color.NONE) {
+				ringArray[1][0] = detectRing(colorMean, colorData);
+			}
+		}
+		nav.travelTo(route[3][0], route[3][1], false);
+		while(leftMotor.isMoving() && rightMotor.isMoving()) {
+			if (ringArray[2][0] == Color.NONE) {
+				ringArray[2][0] = detectRing(colorMean, colorData);
+			}
+		}
+		nav.travelTo(route[0][0], route[0][1], false);
+		while(leftMotor.isMoving() && rightMotor.isMoving()) {
+			if (ringArray[3][0] == Color.NONE) {
+				ringArray[3][0] = detectRing(colorMean, colorData);
+			}
+		}
 		
 		// move light sensor to bottom row of rings height
+		medMotor.rotate(40);
 		
 		// walk around tree to detect rings on bottom level
+		nav.travelTo(route[1][0], route[1][1], false);
+		while(leftMotor.isMoving() && rightMotor.isMoving()) {
+			if (ringArray[0][1] == Color.NONE) {
+				ringArray[0][1] = detectRing(colorMean, colorData);
+			}
+		}
+		nav.travelTo(route[2][0], route[2][1], false);
+		while(leftMotor.isMoving() && rightMotor.isMoving()) {
+			if (ringArray[1][1] == Color.NONE) {
+				ringArray[1][1] = detectRing(colorMean, colorData);
+			}
+		}
+		nav.travelTo(route[3][0], route[3][1], false);
+		while(leftMotor.isMoving() && rightMotor.isMoving()) {
+			if (ringArray[2][1] == Color.NONE) {
+				ringArray[2][1] = detectRing(colorMean, colorData);
+			}
+		}
+		nav.travelTo(route[0][0], route[0][1], false);
+		while(leftMotor.isMoving() && rightMotor.isMoving()) {
+			if (ringArray[3][1] == Color.NONE) {
+				ringArray[3][1] = detectRing(colorMean, colorData);
+			}
+		}
 		
 		// pick up rings
+	}
+	
+	private static int detectRing(SampleProvider colorMean, float[] colorData) {
+		colorMean.fetchSample(colorData, 0); // acquire data
+		float red = colorData[0];
+		float green = colorData[1];
+		float blue = colorData[2];
+		
+		return Color.BLACK;
 	}
 	
 	/**
 	 * 
 	 * @param starting
 	 * @param destinations
-	 * @return list of coordinates in tiles (not cm) in order. The 0th coordinate is the closest
+	 * @return list of coordinates in tiles (not cm) in clockwise rotation order. The 0th coordinate is the closest
 	 * coordinate to the starting point. 
 	 */
-	private static double[] getFastestRoute(double[] starting, double[][] destinations) {
-		return starting;
+	private static double[][] getFastestRoute(double[] starting) {
+		
+		// determine 4 points around tree and their distances from the given starting point
+		double[] bottomLeft = {ringsetx-0.5, ringsety-0.5};
+		double distanceBL = Math.abs(starting[0]-bottomLeft[0]) + Math.abs(starting[1]-bottomLeft[1]);
+		double[] topLeft = {ringsetx-0.5, ringsety+0.5};
+		double distanceTL = Math.abs(starting[0]-topLeft[0]) + Math.abs(starting[1]-topLeft[1]);
+		double[] topRight = {ringsetx+0.5, ringsety+0.5};
+		double distanceTR = Math.abs(starting[0]-topRight[0]) + Math.abs(starting[1]-topRight[1]);
+		double[] bottomRight = {ringsetx+0.5, ringsety-0.5};
+		double distanceBR = Math.abs(starting[0]-bottomRight[0]) + Math.abs(starting[1]-bottomRight[1]);
+
+		// find which point is the closest
+		double min = Math.min (Math.min(distanceBL, distanceTL), Math.min(distanceTR, distanceBR));
+		
+		double[][] coordinates = {bottomLeft,topLeft,topRight,bottomRight};
+		
+		if (min == distanceTL) {
+			coordinates[0] = topLeft; coordinates[1] = topRight; coordinates[2] = bottomRight; coordinates[3] = bottomLeft;
+		}
+		if (min == distanceTR) {
+			coordinates[0] = topRight; coordinates[1] = bottomRight; coordinates[2] = bottomLeft; coordinates[3] = topLeft;
+		}
+		
+		if (min == distanceBR) {
+			coordinates[0] = bottomRight; coordinates[1] = bottomLeft; coordinates[2] = topLeft; coordinates[3] = topRight;
+		}
+		
+		return coordinates;
 	}
 
 

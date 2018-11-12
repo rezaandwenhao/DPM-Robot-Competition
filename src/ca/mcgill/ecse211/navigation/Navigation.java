@@ -48,7 +48,7 @@ public class Navigation {
 	 * @param x (tiles): x coordinate of destination
 	 * @param y (tiles): y coordinate of destination
 	 */
-	public void travelTo(double x, double y) {  
+	public void travelTo(double x, double y, boolean wait) {  
 		double currentPos[] = odo.getXYT();
 		  
 		//difference in position
@@ -70,7 +70,7 @@ public class Navigation {
 		turnTo(desiredAngle);
 	  
 		//move forwards to reach the point x,y.
-		move(true, true, true, true, hypotenuse, RingRetriever.FORWARD_SPEED);
+		move(true, true, true, wait, hypotenuse, RingRetriever.FORWARD_SPEED);
 	}
 	  
 	/**
