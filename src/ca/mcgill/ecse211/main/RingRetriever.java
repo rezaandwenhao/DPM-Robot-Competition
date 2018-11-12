@@ -147,8 +147,10 @@ public class RingRetriever {
 		
 		// move through tunnel
 	    nav.move(true, true, true, true, TILE_SIZE, FORWARD_SPEED);        
-	    nav.move(true, true, true, true, TILE_SIZE, ROTATE_SPEED); 
-	    nav.move(true, true, true, true, TILE_SIZE*3-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED); 
+	    nav.move(true, true, true, true, TILE_SIZE, ROTATE_SPEED);
+		// brute force offset, turn left a bit in the tunnel
+		nav.move(false, true, true, true, 1, ROTATE_SPEED);
+		nav.move(true, true, true, true, TILE_SIZE*3-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
 		
 		// localize to exit of tunnel
 		double[] exitInfo = getExit();
