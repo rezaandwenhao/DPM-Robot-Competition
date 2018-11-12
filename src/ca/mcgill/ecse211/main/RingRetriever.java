@@ -143,7 +143,7 @@ public class RingRetriever {
 		nav.travelTo(entranceInfo[0], entranceInfo[1]);
 		
 		// localize to "entrance" of tunnel
-		ll.tunnelLocalization(entranceInfo, true);
+		ll.tunnelLocalization(entranceInfo, false);
 		
 		// move through tunnel
 	    nav.move(true, true, true, true, TILE_SIZE, FORWARD_SPEED);        
@@ -152,8 +152,19 @@ public class RingRetriever {
 		
 		// localize to exit of tunnel
 		double[] exitInfo = getExit();
-		exitInfo[2] = exitInfo[2]-180; // to have robot end point away from tunnel
-		ll.tunnelLocalization(exitInfo, false);
+		exitInfo[2] = exitInfo[2]-180; // reverse theta to have robot end point away from tunnel
+		ll.tunnelLocalization(exitInfo, true);
+		
+		// determine 4 points around tree
+		double[] bottomLeft = {ringsetx-0.5, ringsety-0.5};
+		double[] topLeft = {ringsetx-0.5, ringsety+0.5};
+		double[] topRight = {ringsetx+0.5, ringsety+0.5};
+		double[] bottomRight = {ringsetx+0.5, ringsety-0.5};
+		
+		// determine which is closest and determine a 'route'
+		double[] startingPoint = {exitInfo[0], exitInfo[1]};
+		double[][] destinations = {bottomLeft, topLeft, topRight, bottomRight};
+		double[] route = getFastestRoute(startingPoint, destinations);
 		
 		// navigate to tree
 		nav.travelTo(ringsetx, ringsety);
@@ -169,6 +180,18 @@ public class RingRetriever {
 		// pick up rings
 	}
 	
+	/**
+	 * 
+	 * @param starting
+	 * @param destinations
+	 * @return list of coordinates in tiles (not cm) in order. The 0th coordinate is the closest
+	 * coordinate to the starting point. 
+	 */
+	private static double[] getFastestRoute(double[] starting, double[][] destinations) {
+		return starting;
+	}
+
+
 	public static void fillGlobalData(Map data) {
 		if (((Long) data.get("RedTeam")).intValue()== Wifi.TEAM_NUMBER) {
 			startingCorner = ((Long)data.get("RedCorner")).intValue();

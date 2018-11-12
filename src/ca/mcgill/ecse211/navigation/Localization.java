@@ -220,7 +220,7 @@ public class Localization {
 	 * @param side: side of tunnel on which you are
 	 * @param entering: true if entering the tunnel, false if exiting
 	 */
-	public void tunnelLocalization(double[] directionInfo, boolean entering) {
+	public void tunnelLocalization(double[] directionInfo, boolean correctOdometer) {
 		// localize to a black line perpendicular to tunnel
 		nav.turnTo(directionInfo[2]-90);
 		lightCorrection();
@@ -230,9 +230,8 @@ public class Localization {
 		nav.turnTo(directionInfo[2]);
 		lightCorrection();
 
-        if (!entering) {
+        if (correctOdometer) {
           nav.move(true, true, false, true, RingRetriever.HALF_TILE_SIZE-RingRetriever.LIGHT_SENSOR_Y_OFFSET, RingRetriever.FORWARD_SPEED); // move backwards
-
           odo.setTheta(directionInfo[2]);
           odo.setX(directionInfo[0]*RingRetriever.TILE_SIZE);
           odo.setY(directionInfo[1]*RingRetriever.TILE_SIZE);
