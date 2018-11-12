@@ -55,7 +55,6 @@ public class RingRetriever {
 	public static Tunnel tunnelExit;
 	public static double[] tunnelEntranceCoordinates;
 	public static double[] tunnelExitCoordinates;
-
 	
 	// Parameters
 	public static final double WHEEL_RAD = 2.13; // (cm) measured with caliper
@@ -180,73 +179,133 @@ public class RingRetriever {
  	    // initialize ringArray which will be 4x2 array
  	    // the first [] corresponds to the route on which the ring was found
  	    // the second [] corresponds to the height at which the ring was found (0 being top and 1 being bottom)
+ 	    // see diagram B
  	    int ringArray[][] = { { Color.NONE, Color.NONE, Color.NONE, Color.NONE }, { Color.NONE, Color.NONE, Color.NONE, Color.NONE } };
  	    
 		// walk around tree to detect rings on top level
-		nav.travelTo(route[1][0], route[1][1], false);
-		while(leftMotor.isMoving() && rightMotor.isMoving()) {
-			if (ringArray[0][0] == Color.NONE) {
-				ringArray[0][0] = detectRing(colorMean, colorData);
-			}
-		}
-		nav.travelTo(route[2][0], route[2][1], false);
-		while(leftMotor.isMoving() && rightMotor.isMoving()) {
+    	nav.travelTo(route[1][0], route[1][1], false);
+    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
 			if (ringArray[1][0] == Color.NONE) {
 				ringArray[1][0] = detectRing(colorMean, colorData);
+				beepRing(ringArray[1][0]);
 			}
 		}
-		nav.travelTo(route[3][0], route[3][1], false);
-		while(leftMotor.isMoving() && rightMotor.isMoving()) {
+    	nav.travelTo(route[2][0], route[2][1], false);
+    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
 			if (ringArray[2][0] == Color.NONE) {
 				ringArray[2][0] = detectRing(colorMean, colorData);
+				beepRing(ringArray[2][0]);
 			}
 		}
-		nav.travelTo(route[0][0], route[0][1], false);
-		while(leftMotor.isMoving() && rightMotor.isMoving()) {
+    	nav.travelTo(route[3][0], route[3][1], false);
+    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
 			if (ringArray[3][0] == Color.NONE) {
 				ringArray[3][0] = detectRing(colorMean, colorData);
+				beepRing(ringArray[3][0]);
 			}
 		}
-		
-		// move light sensor to bottom row of rings height
-		medMotor.rotate(40);
-		
-		// walk around tree to detect rings on bottom level
-		nav.travelTo(route[1][0], route[1][1], false);
-		while(leftMotor.isMoving() && rightMotor.isMoving()) {
-			if (ringArray[0][1] == Color.NONE) {
-				ringArray[0][1] = detectRing(colorMean, colorData);
+    	nav.travelTo(route[0][0], route[0][1], false);
+    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
+			if (ringArray[0][0] == Color.NONE) {
+				ringArray[0][0] = detectRing(colorMean, colorData);
+				beepRing(ringArray[0][0]);
 			}
 		}
-		nav.travelTo(route[2][0], route[2][1], false);
-		while(leftMotor.isMoving() && rightMotor.isMoving()) {
+    	 
+ 		medMotor.rotate(40); // move light sensor to bottom row of rings height
+
+ 		// walk around tree to detect rings on bottom level
+    	nav.travelTo(route[1][0], route[1][1], false);
+    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
 			if (ringArray[1][1] == Color.NONE) {
 				ringArray[1][1] = detectRing(colorMean, colorData);
+				beepRing(ringArray[1][1]);
 			}
 		}
-		nav.travelTo(route[3][0], route[3][1], false);
-		while(leftMotor.isMoving() && rightMotor.isMoving()) {
+    	nav.travelTo(route[2][0], route[2][1], false);
+    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
 			if (ringArray[2][1] == Color.NONE) {
 				ringArray[2][1] = detectRing(colorMean, colorData);
+				beepRing(ringArray[2][1]);
 			}
 		}
-		nav.travelTo(route[0][0], route[0][1], false);
-		while(leftMotor.isMoving() && rightMotor.isMoving()) {
+    	nav.travelTo(route[3][0], route[3][1], false);
+    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
 			if (ringArray[3][1] == Color.NONE) {
 				ringArray[3][1] = detectRing(colorMean, colorData);
+				beepRing(ringArray[3][1]);
 			}
 		}
-		
+    	nav.travelTo(route[0][0], route[0][1], false);
+    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
+			if (ringArray[0][1] == Color.NONE) {
+				ringArray[0][1] = detectRing(colorMean, colorData);
+				beepRing(ringArray[0][1]);
+			}
+		}
+ 		
+ 	    // create strategy from ringArray
+ 	    double[][] strategy = null; // array of {x,y,theta,0/1} where x and y are coordinates to be at to pick up ring
+ 	    					 // theta is the orientation at which to be to pick up the rings
+ 	    					 // 0/1 is a boolean for the level (0 is top, 1 is bottom)
+ 	    
 		// pick up rings
+ 	    
 	}
 	
+	private static int getValue(int ring) {
+		switch (ring) {
+		case Color.ORANGE:
+			return 4;
+		case Color.YELLOW:
+			return 3;
+		case Color.GREEN:
+			return 2;
+		case Color.BLUE:
+			return 1;
+		default:
+			return 0;
+		}
+	}
+
+	/**
+	 * Beeps a certain number of times per ring according to the following
+	 * Orange: 4, Yellow: 3, Green: 2, Blue: 1, Others: 0
+	 * @param ring
+	 */
+	private static void beepRing(int ring) {
+		int numberOfBeeps = getValue(ring);
+		for (int i=0; i<numberOfBeeps; i++) Sound.beep();
+	}
+
+	/**
+	 * Samples the color sensor in RGB mode and returns the color detected
+	 * @param colorMean
+	 * @param colorData
+	 * @return Color (as an int according to lejos library)
+	 */
 	private static int detectRing(SampleProvider colorMean, float[] colorData) {
 		colorMean.fetchSample(colorData, 0); // acquire data
 		float red = colorData[0];
 		float green = colorData[1];
 		float blue = colorData[2];
 		
-		return Color.BLACK;
+		//normalize the data
+        red = (float) (red/(Math.sqrt(Math.pow(red, 2) + Math.pow(blue, 2) + Math.pow(green, 2))));
+        green = (float) (green/(Math.sqrt(Math.pow(red, 2) + Math.pow(blue, 2) + Math.pow(green, 2))));
+        blue = (float) (blue/(Math.sqrt(Math.pow(red, 2) + Math.pow(blue, 2) + Math.pow(green, 2))));
+        
+        // classify color according to testing calibrations
+        if (0.140 < red && red < 0.210 && 0.120 < blue && blue < 0.210) {
+          return Color.BLUE;
+        } else if (0.4 < red && red < 0.5 && 0.010 < blue && blue < 0.050) {
+          return Color.GREEN;
+        } else if (0.810 < red && red < 0.86 && 0.010 < blue && blue < 0.050) {
+          return Color.YELLOW;
+        } else if (0.935 < red && red < 0.98 && 0.003 < blue && blue < 0.02) {
+          return Color.ORANGE;
+        }         
+		return Color.NONE;
 	}
 	
 	/**
@@ -524,8 +583,12 @@ public class RingRetriever {
 	 * This is done by raising the arms of the robot using the medium motor and taking the rings off the tree
 	 * The way of retrieving the rings is different depending if the ring is on the lower branch or the upper branch
 	 * The angle that the arms move towards the tree differs depending on the position of the ring
+	 * @param x
+	 * @param y
+	 * @param theta
+	 * @param bottom
 	 */
-	public void loadRing() {
+	public static void loadRing(double x, double y, double theta, double bottom) {
 		
 	}
 	/**
