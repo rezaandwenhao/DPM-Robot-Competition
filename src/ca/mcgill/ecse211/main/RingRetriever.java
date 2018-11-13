@@ -76,11 +76,11 @@ public class RingRetriever {
 	private static final EV3LargeRegulatedMotor rightMotor =
 			new EV3LargeRegulatedMotor(LocalEV3.get().getPort("C"));
 	private static final EV3MediumRegulatedMotor medMotor =
-			new EV3MediumRegulatedMotor(LocalEV3.get().getPort("A"));
-	private static final Port usPort = LocalEV3.get().getPort("S3");
+			new EV3MediumRegulatedMotor(LocalEV3.get().getPort("D"));
+	private static final Port usPort = LocalEV3.get().getPort("S2");
 	private static final Port lightLPort = LocalEV3.get().getPort("S1");
 	private static final Port lightRPort = LocalEV3.get().getPort("S4");
-	private static final Port colorPort = LocalEV3.get().getPort("S2");
+	private static final Port colorPort = LocalEV3.get().getPort("S3");
 	private static final TextLCD lcd = LocalEV3.get().getTextLCD();
 
 	
@@ -161,7 +161,7 @@ public class RingRetriever {
 		ll.tunnelLocalization(exitInfo, true);
 		
 		// determine which point around the tree is closest and determine a 'route'
-		double[] startingPoint = {exitInfo[0], exitInfo[1]};
+		double[] startingPoint = {exitInfo[0], exitInfo[1]}; // this point should be where the robot is currently
 		double[][] route = getFastestRoute(startingPoint);
 		
 		// navigate to tree
@@ -169,7 +169,7 @@ public class RingRetriever {
 		
 		// Initializing Color Sensor and runs it in this thread
  		@SuppressWarnings("resource") // Because we don't bother to close this resource
- 		SensorModes colorSensor = new EV3ColorSensor(lightRPort); // usSensor is the instance
+ 		SensorModes colorSensor = new EV3ColorSensor(colorPort); // usSensor is the instance
  		SampleProvider colorSample = colorSensor.getMode("RGB"); 
  		SampleProvider colorMean = new MeanFilter(colorSample, 5); // use a mean filter to reduce fluctuations
  	    float[] colorData = new float[colorMean.sampleSize()]; // usData is the buffer in which data are returned
@@ -180,38 +180,22 @@ public class RingRetriever {
  	    // the first [] corresponds to the route on which the ring was found
  	    // the second [] corresponds to the height at which the ring was found (0 being top and 1 being bottom)
  	    // see diagram B
- 	    int ringArray[][] = { { Color.NONE, Color.NONE, Color.NONE, Color.NONE }, { Color.NONE, Color.NONE, Color.NONE, Color.NONE } };
+ 	    int ringArray[][] = { { Color.NONE, Color.NONE }, { Color.NONE, Color.NONE}, { Color.NONE, Color.NONE}, { Color.NONE, Color.NONE } };
  	    
 		// walk around tree to detect rings on top level
-    	nav.travelTo(route[1][0], route[1][1], false);
-    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
-			if (ringArray[1][0] == Color.NONE) {
-				ringArray[1][0] = detectRing(colorMean, colorData);
-				beepRing(ringArray[1][0]);
+    	int topPath[] = {1,2,3,0};
+    	for (int i=0; i<topPath.length; i++) {
+    		nav.travelTo(route[topPath[i]][0], route[topPath[i]][1], false);
+	    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
+				if (ringArray[topPath[i]][0] == Color.NONE) {
+					ringArray[topPath[i]][0] = detectRing(colorMean, colorData);
+					beepRing(ringArray[topPath[i]][0]);
+				}
 			}
-		}
-    	nav.travelTo(route[2][0], route[2][1], false);
-    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
-			if (ringArray[2][0] == Color.NONE) {
-				ringArray[2][0] = detectRing(colorMean, colorData);
-				beepRing(ringArray[2][0]);
-			}
-		}
-    	nav.travelTo(route[3][0], route[3][1], false);
-    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
-			if (ringArray[3][0] == Color.NONE) {
-				ringArray[3][0] = detectRing(colorMean, colorData);
-				beepRing(ringArray[3][0]);
-			}
-		}
-    	nav.travelTo(route[0][0], route[0][1], false);
-    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
-			if (ringArray[0][0] == Color.NONE) {
-				ringArray[0][0] = detectRing(colorMean, colorData);
-				beepRing(ringArray[0][0]);
-			}
-		}
-    	 
+	    	ll.lightCorrection();
+	    	nav.move(true, true, false, true, HALF_TILE_SIZE-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
+    	}
+ 	   
  		medMotor.rotate(40); // move light sensor to bottom row of rings height
 
  		// walk around tree to detect rings on bottom level
@@ -243,14 +227,72 @@ public class RingRetriever {
 				beepRing(ringArray[0][1]);
 			}
 		}
+    	
+    	int currentSide= 0;
  		
- 	    // create strategy from ringArray
- 	    double[][] strategy = null; // array of {x,y,theta,0/1} where x and y are coordinates to be at to pick up ring
- 	    					 // theta is the orientation at which to be to pick up the rings
- 	    					 // 0/1 is a boolean for the level (0 is top, 1 is bottom)
- 	    
-		// pick up rings
- 	    
+    	while (ringsRemaining(ringArray) > 0) {
+    		// find most valuable ring
+    		int[] sideAndLevel = getMostValuableRing(ringArray); // array is [side,level]
+    		int side = sideAndLevel[0];
+    		int level = sideAndLevel[1];
+        	ringArray = resetRing(sideAndLevel[0], sideAndLevel[1], ringArray); // reset ring value so we don't pick it up again
+        	
+        	while(!canTravelStraight(currentSide, side)) {
+        		currentSide = (currentSide+1)%3;
+        		nav.travelTo(route[currentSide][0], route[currentSide][1], true);
+        	}
+        	
+    		int rightSide = (side-1)%3;        	
+        	double middle[] = {(route[side][0]+route[rightSide][0])/2, (route[side][1]+route[rightSide][1])/2 };
+    		
+        	nav.travelTo(middle[0], middle[1], true);
+        	
+        	nav.rotate(true, 90, true);
+    	}
+
+	}
+
+	private static boolean canTravelStraight(int from, int to) {
+		if (from == to || from == to+1) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	private static int ringsRemaining(int[][] ringArray) {
+		int counter = 0;
+		for (int level=0; level<2; level++) {
+			for (int side=0; side<4; side++) {
+				if(getValue(ringArray[side][level]) > 0) counter++;
+			}
+		}
+		return counter;
+	}
+	
+	/**
+	 * 
+	 * @param ringArray
+	 * @return array of {side,level} of most valuable ring
+	 */
+	private static int[] getMostValuableRing(int[][] ringArray) {
+		int maxRing_side = 0;
+		int maxRing_level = 0;
+		for (int level=0; level<2; level++) {
+			for (int side=0; side<4; side++) {
+				if (getValue(ringArray[maxRing_side][maxRing_side]) < getValue(ringArray[side][level])) {
+					maxRing_level = level;
+					maxRing_side = side;
+				}
+			}
+		}
+		int[] returnValue = {maxRing_side, maxRing_level};
+		return returnValue;
+	}
+	
+	private static int[][] resetRing(int side, int level, int[][] ringArray) {
+		ringArray[side][level] = Color.NONE;
+		return ringArray;
 	}
 	
 	private static int getValue(int ring) {
@@ -286,23 +328,20 @@ public class RingRetriever {
 	 */
 	private static int detectRing(SampleProvider colorMean, float[] colorData) {
 		colorMean.fetchSample(colorData, 0); // acquire data
-		float red = colorData[0];
-		float green = colorData[1];
-		float blue = colorData[2];
-		
+	
 		//normalize the data
-        red = (float) (red/(Math.sqrt(Math.pow(red, 2) + Math.pow(blue, 2) + Math.pow(green, 2))));
-        green = (float) (green/(Math.sqrt(Math.pow(red, 2) + Math.pow(blue, 2) + Math.pow(green, 2))));
-        blue = (float) (blue/(Math.sqrt(Math.pow(red, 2) + Math.pow(blue, 2) + Math.pow(green, 2))));
+        float red = (float) (colorData[0]/(Math.sqrt(Math.pow(colorData[0], 2) + Math.pow(colorData[2], 2) + Math.pow(colorData[1], 2))));
+//        float green = (float) (colorData[1]/(Math.sqrt(Math.pow(colorData[0], 2) + Math.pow(colorData[2], 2) + Math.pow(colorData[1], 2))));
+        float blue = (float) (colorData[2]/(Math.sqrt(Math.pow(colorData[0], 2) + Math.pow(colorData[2], 2) + Math.pow(colorData[1], 2))));
         
         // classify color according to testing calibrations
-        if (0.140 < red && red < 0.210 && 0.120 < blue && blue < 0.210) {
+        if (0.07 < red && red < 0.18 && 0.49 < blue && blue < 0.64) {
           return Color.BLUE;
-        } else if (0.4 < red && red < 0.5 && 0.010 < blue && blue < 0.050) {
+        } else if (0.34 < red && red < 0.43 && 0.07 < blue && blue < 0.15) {
           return Color.GREEN;
-        } else if (0.810 < red && red < 0.86 && 0.010 < blue && blue < 0.050) {
+        } else if (0.76 < red && red < 0.85 && 0.09 < blue && blue < 0.14) {
           return Color.YELLOW;
-        } else if (0.935 < red && red < 0.98 && 0.003 < blue && blue < 0.02) {
+        } else if (0.92 < red && red < 0.98 && 0.06 < blue && blue < 0.1) {
           return Color.ORANGE;
         }         
 		return Color.NONE;
@@ -317,14 +356,16 @@ public class RingRetriever {
 	 */
 	private static double[][] getFastestRoute(double[] starting) {
 		
+		double distanceFromTree=0.6;
+		
 		// determine 4 points around tree and their distances from the given starting point
-		double[] bottomLeft = {ringsetx-0.5, ringsety-0.5};
+		double[] bottomLeft = {ringsetx-distanceFromTree, ringsety-distanceFromTree};
 		double distanceBL = Math.abs(starting[0]-bottomLeft[0]) + Math.abs(starting[1]-bottomLeft[1]);
-		double[] topLeft = {ringsetx-0.5, ringsety+0.5};
+		double[] topLeft = {ringsetx-distanceFromTree, ringsety+distanceFromTree};
 		double distanceTL = Math.abs(starting[0]-topLeft[0]) + Math.abs(starting[1]-topLeft[1]);
-		double[] topRight = {ringsetx+0.5, ringsety+0.5};
+		double[] topRight = {ringsetx+distanceFromTree, ringsety+distanceFromTree};
 		double distanceTR = Math.abs(starting[0]-topRight[0]) + Math.abs(starting[1]-topRight[1]);
-		double[] bottomRight = {ringsetx+0.5, ringsety-0.5};
+		double[] bottomRight = {ringsetx+distanceFromTree, ringsety-distanceFromTree};
 		double distanceBR = Math.abs(starting[0]-bottomRight[0]) + Math.abs(starting[1]-bottomRight[1]);
 
 		// find which point is the closest
