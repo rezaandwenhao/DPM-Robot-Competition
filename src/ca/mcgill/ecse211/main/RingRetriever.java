@@ -25,6 +25,7 @@ import lejos.robotics.filter.MeanFilter;
 /**
  * <h1>ECSE 211 - Design Principles and Methods</h1>
  * @author Eliott Bourachot
+ * @edits Wenhao Geng
  *
  */
 public class RingRetriever {
@@ -69,14 +70,15 @@ public class RingRetriever {
 	public static final int BOARD_WIDTH = 8;
 	public static final int BOARD_HEIGHT = 8;
 	public static final int ULTRASONIC_OFFSET = -90;
+	public static final int FILTER_LIMIT = 10;
 	
 	// Objects
 	private static final EV3LargeRegulatedMotor leftMotor = 
 			new EV3LargeRegulatedMotor(LocalEV3.get().getPort("B"));
 	private static final EV3LargeRegulatedMotor rightMotor =
 			new EV3LargeRegulatedMotor(LocalEV3.get().getPort("C"));
-	private static final EV3MediumRegulatedMotor medMotor =
-			new EV3MediumRegulatedMotor(LocalEV3.get().getPort("D"));
+	private static final EV3LargeRegulatedMotor backMotor =
+			new EV3LargeRegulatedMotor(LocalEV3.get().getPort("A"));
 	private static final Port usPort = LocalEV3.get().getPort("S2");
 	private static final Port lightLPort = LocalEV3.get().getPort("S1");
 	private static final Port lightRPort = LocalEV3.get().getPort("S4");
@@ -89,9 +91,8 @@ public class RingRetriever {
 	 * It also initializes the ultrasonic sensors and uses a filter to reduce the fluctuations
 	 * @throws OdometerExceptions
 	 */
-	public static void main(String args[])  throws OdometerExceptions {
-		
-		Wifi wifi = new Wifi();
+	public static void main(String args[])  throws OdometerExceptions {	  
+   	    Wifi wifi = new Wifi();
 		Map data = wifi.getData();
 		
 		fillGlobalData(data);
@@ -128,32 +129,32 @@ public class RingRetriever {
  	    Localization ll = new Localization(lightLMean, lightRMean, usMean, lightLData, lightRData, usData, nav, odometer, lcd);
 	   
 		// localize to the closest intersection
- 	    ll.fallingEdge();
-		ll.lightCorrection();
-	    odometer.setXYT(odometer.getXYT()[0], 0-LIGHT_SENSOR_Y_OFFSET, 0); // reset Y and Theta
-	    nav.move(true, true, false, true, 5, FORWARD_SPEED);
-	    nav.rotate(true, 90, true);
-	    ll.lightCorrection();
-	    odometer.setXYT(0-LIGHT_SENSOR_X_OFFSET, odometer.getXYT()[1], 90);
-	    nav.travelTo(0, 0, true);
-	    nav.turnTo(0);
+// 	    ll.fallingEdge();
+//		ll.lightCorrection();
+//	    odometer.setXYT(odometer.getXYT()[0], 0-LIGHT_SENSOR_Y_OFFSET, 0); // reset Y and Theta
+//	    nav.move(true, true, false, true, 5, FORWARD_SPEED);
+//	    nav.rotate(true, 90, true);
+//	    ll.lightCorrection();
+//	    odometer.setXYT(0-LIGHT_SENSOR_X_OFFSET, odometer.getXYT()[1], 90);
+//	    nav.travelTo(0, 0, true);
+//	    nav.turnTo(0);
 	    
 	    // correct position depending on given start corner
-		odometer.setStartingCoordinates(startingCorner);
+//		odometer.setStartingCoordinates(startingCorner);
 		
 		// navigate to tunnel
 		// entranceInfo is X,Y,THETA where THETA is the angle of the entrance to the tunnel
-		double[] entranceInfo = getEntrance();
-		nav.travelTo(entranceInfo[0], entranceInfo[1], true);
+//		double[] entranceInfo = getEntrance();
+//		nav.travelTo(entranceInfo[0], entranceInfo[1], true);
 		
 		// localize to "entrance" of tunnel
-		ll.tunnelLocalization(entranceInfo, false);
+//		ll.tunnelLocalization(entranceInfo, false);
 		
 		// move through tunnel
-	    nav.move(true, true, true, true, TILE_SIZE, FORWARD_SPEED);        
-	    nav.move(true, true, true, true, TILE_SIZE, ROTATE_SPEED);
-		nav.move(false, true, true, true, 1, ROTATE_SPEED); // brute force offset, turn left a bit in the tunnel
-		nav.move(true, true, true, true, TILE_SIZE*3-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
+//	    nav.move(true, true, true, true, TILE_SIZE, FORWARD_SPEED);        
+//	    nav.move(true, true, true, true, TILE_SIZE, ROTATE_SPEED);
+//		nav.move(false, true, true, true, 1, ROTATE_SPEED); // brute force offset, turn left a bit in the tunnel
+//		nav.move(true, true, true, true, TILE_SIZE*3-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
 		
 		// localize to exit of tunnel
 		double[] exitInfo = getExit();
@@ -182,51 +183,57 @@ public class RingRetriever {
  	    // see diagram B
  	    int ringArray[][] = { { Color.NONE, Color.NONE }, { Color.NONE, Color.NONE}, { Color.NONE, Color.NONE}, { Color.NONE, Color.NONE } };
  	    
+ 	    int colourFilter = 0; int pastColour = Color.NONE;
+ 	    
 		// walk around tree to detect rings on top level
     	int topPath[] = {1,2,3,0};
     	for (int i=0; i<topPath.length; i++) {
     		nav.travelTo(route[topPath[i]][0], route[topPath[i]][1], false);
 	    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
-				if (ringArray[topPath[i]][0] == Color.NONE) {
-					ringArray[topPath[i]][0] = detectRing(colorMean, colorData);
-					beepRing(ringArray[topPath[i]][0]);
-				}
+	    	  if (colourFilter < FILTER_LIMIT) {
+	    	    ringArray[topPath[i]][0] = detectRing(colorMean, colorData);
+	    	    if (ringArray[topPath[i]][0] == pastColour && pastColour != Color.NONE) {
+	    	      colourFilter++;
+	    	      if (colourFilter == FILTER_LIMIT) beepRing(ringArray[topPath[i]][0]);
+	    	    } else {
+	    	      colourFilter = 0;
+	    	    }
+	    	    pastColour = ringArray[topPath[i]][0];
+	    	  }
+	    	  
 			}
+	    	colourFilter = 0;
+	    	nav.move(true, true, false, true, LIGHT_SENSOR_Y_OFFSET+4, FORWARD_SPEED); // back up to be able to do localization
 	    	ll.lightCorrection();
-	    	nav.move(true, true, false, true, HALF_TILE_SIZE-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
+	    	nav.move(true, true, false, true, TILE_SIZE*0.4-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
+	        odometer.setXYT(route[topPath[i]][0]*TILE_SIZE, route[topPath[i]][1]*TILE_SIZE, getCorrectedTheta(odometer)); // update the x, y and theta
+	    	
     	}
  	   
- 		medMotor.rotate(40); // move light sensor to bottom row of rings height
+ 		backMotor.rotate(-40); // move light sensor to bottom row of rings height
 
  		// walk around tree to detect rings on bottom level
-    	nav.travelTo(route[1][0], route[1][1], false);
-    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
-			if (ringArray[1][1] == Color.NONE) {
-				ringArray[1][1] = detectRing(colorMean, colorData);
-				beepRing(ringArray[1][1]);
-			}
-		}
-    	nav.travelTo(route[2][0], route[2][1], false);
-    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
-			if (ringArray[2][1] == Color.NONE) {
-				ringArray[2][1] = detectRing(colorMean, colorData);
-				beepRing(ringArray[2][1]);
-			}
-		}
-    	nav.travelTo(route[3][0], route[3][1], false);
-    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
-			if (ringArray[3][1] == Color.NONE) {
-				ringArray[3][1] = detectRing(colorMean, colorData);
-				beepRing(ringArray[3][1]);
-			}
-		}
-    	nav.travelTo(route[0][0], route[0][1], false);
-    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
-			if (ringArray[0][1] == Color.NONE) {
-				ringArray[0][1] = detectRing(colorMean, colorData);
-				beepRing(ringArray[0][1]);
-			}
-		}
+        for (int i=0; i<topPath.length; i++) {
+            nav.travelTo(route[topPath[i]][0], route[topPath[i]][1], false);
+            while(leftMotor.isMoving() && rightMotor.isMoving()) {
+              if (colourFilter < FILTER_LIMIT) {
+                ringArray[topPath[i]][1] = detectRing(colorMean, colorData);
+                if (ringArray[topPath[i]][1] == pastColour && pastColour != Color.NONE) {
+                  colourFilter++;
+                  if (colourFilter == FILTER_LIMIT) beepRing(ringArray[topPath[i]][1]);
+                } else {
+                  colourFilter = 0;
+                }
+                pastColour = ringArray[topPath[i]][1];
+              }
+              
+            }
+            colourFilter = 0;
+            nav.move(true, true, false, true, LIGHT_SENSOR_Y_OFFSET+4, FORWARD_SPEED);// back up to be able to do localization
+            ll.lightCorrection();
+            nav.move(true, true, false, true, TILE_SIZE*0.4-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
+            odometer.setXYT(route[topPath[i]][0]*TILE_SIZE, route[topPath[i]][1]*TILE_SIZE, getCorrectedTheta(odometer)); // update the x, y, and theta
+        }
     	
     	int currentSide= 0;
  		
@@ -250,6 +257,15 @@ public class RingRetriever {
         	nav.rotate(true, 90, true);
     	}
 
+	}
+	
+	private static double getCorrectedTheta(Odometer odo) {
+	  double theta = odo.getXYT()[2];
+	  if (330 < theta || theta < 30) return 0;
+	  else if (60 < theta && theta < 120) return 90;
+	  else if (150 < theta && theta < 210) return 180;
+	  else if (240 < theta && theta < 300) return 270;
+	  else return theta;
 	}
 
 	private static boolean canTravelStraight(int from, int to) {
@@ -356,7 +372,11 @@ public class RingRetriever {
 	 */
 	private static double[][] getFastestRoute(double[] starting) {
 		
-		double distanceFromTree=0.6;
+	    //Note from Wenhao: I actully think this value does not really matter that much, what actually control the distance to the tree 
+	    // is the call nav.move(true, true, false, true, TILE_SIZE*0.4-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED); at line 207 and 233
+	  
+	    // I argue to lower it to 0.6-0.7 should work too, and is an more accurate odometer update
+		double distanceFromTree=0.85;
 		
 		// determine 4 points around tree and their distances from the given starting point
 		double[] bottomLeft = {ringsetx-distanceFromTree, ringsety-distanceFromTree};
