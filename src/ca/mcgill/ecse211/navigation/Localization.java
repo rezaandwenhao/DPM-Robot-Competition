@@ -40,6 +40,7 @@ public class Localization {
 	private static final int VOID_BAND = 3;
 	private static final int R_COLOR_THRESHOLD = 20;
 	private static final int L_COLOR_THRESHOLD = 17;
+	private static final int CORRECTION_SPEED = 50;
 
 	
 	// Global variables
@@ -121,7 +122,7 @@ public class Localization {
 		int lightR = (int) (lightDataR[0] * 100.0); // extract from buffer, cast to int
 		
 		// Move forwards until first sensor hits line
-		nav.move(true, true, true, false, 30, 30);
+		nav.move(true, true, true, false, 30, CORRECTION_SPEED);
 		while (lightL > L_COLOR_THRESHOLD && lightR > R_COLOR_THRESHOLD) { // move forward until you hit a black band
 			lightMeanL.fetchSample(lightDataL, 0); // acquire data
 			lightL = (int) (lightDataL[0] * 100.0); // extract from buffer, cast to int
@@ -136,7 +137,7 @@ public class Localization {
 			boolean timeout = false;
 			boolean forwards = true;
 			do {
-				nav.move(true, false, forwards, false, 10, 30);
+				nav.move(true, false, forwards, false, 10, CORRECTION_SPEED);
 				long timeoutSnapshot = System.currentTimeMillis();
 				while (lightL > L_COLOR_THRESHOLD) {
 					lightMeanL.fetchSample(lightDataL, 0); // acquire data
@@ -154,7 +155,7 @@ public class Localization {
 			boolean timeout = false;
 			boolean forwards = true;
 			do {
-				nav.move(false, true, true, false, 10, 30);
+				nav.move(false, true, true, false, 10, CORRECTION_SPEED);
 				long timeoutSnapshot = System.currentTimeMillis();
 				while (lightR > R_COLOR_THRESHOLD) {
 					lightMeanR.fetchSample(lightDataR, 0); // acquire data

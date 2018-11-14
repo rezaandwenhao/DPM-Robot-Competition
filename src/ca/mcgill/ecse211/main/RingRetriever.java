@@ -186,81 +186,64 @@ public class RingRetriever {
  	    int ringArray[][] = { { Color.NONE, Color.NONE }, { Color.NONE, Color.NONE}, { Color.NONE, Color.NONE}, { Color.NONE, Color.NONE } };
  	    
  	    int colourFilter = 0; int pastColour = Color.NONE;
- 	    
-		// walk around tree to detect rings on top level
-    	int topPath[] = {1,2,3,0};
-    	for (int i=0; i<topPath.length; i++) {
-    		nav.travelTo(route[topPath[i]][0], route[topPath[i]][1], false);
-	    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
-	    	  if (colourFilter < FILTER_LIMIT) {
-	    	    ringArray[topPath[i]][0] = detectRing(colorMean, colorData);
-	    	    if (ringArray[topPath[i]][0] == pastColour && pastColour != Color.NONE) {
-	    	      colourFilter++;
-	    	      if (colourFilter == FILTER_LIMIT) beepRing(ringArray[topPath[i]][0]);
-	    	    } else {
-	    	      colourFilter = 0;
-	    	    }
-	    	    pastColour = ringArray[topPath[i]][0];
-	    	  }
-	    	  
-			}
-	    	colourFilter = 0;
-	    	nav.move(true, true, false, true, LIGHT_SENSOR_Y_OFFSET+4, FORWARD_SPEED); // back up to be able to do localization
-	    	ll.lightCorrection();
-	    	nav.move(true, true, false, true, TILE_SIZE*0.4-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
-	        odometer.setXYT(route[topPath[i]][0]*TILE_SIZE, route[topPath[i]][1]*TILE_SIZE, getCorrectedTheta(odometer)); // update the x, y and theta
-	    	
-    	}
- 	   
- 		backMotor.rotate(-40); // move light sensor to bottom row of rings height
+    	int sensorRotate = -60;
 
- 		// walk around tree to detect rings on bottom level
-        for (int i=0; i<topPath.length; i++) {
-            nav.travelTo(route[topPath[i]][0], route[topPath[i]][1], false);
-            while(leftMotor.isMoving() && rightMotor.isMoving()) {
-              if (colourFilter < FILTER_LIMIT) {
-                ringArray[topPath[i]][1] = detectRing(colorMean, colorData);
-                if (ringArray[topPath[i]][1] == pastColour && pastColour != Color.NONE) {
-                  colourFilter++;
-                  if (colourFilter == FILTER_LIMIT) beepRing(ringArray[topPath[i]][1]);
-                } else {
-                  colourFilter = 0;
-                }
-                pastColour = ringArray[topPath[i]][1];
-              }
-              
-            }
-            colourFilter = 0;
-            nav.move(true, true, false, true, LIGHT_SENSOR_Y_OFFSET+4, FORWARD_SPEED);// back up to be able to do localization
-            ll.lightCorrection();
-            nav.move(true, true, false, true, TILE_SIZE*0.4-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
-            odometer.setXYT(route[topPath[i]][0]*TILE_SIZE, route[topPath[i]][1]*TILE_SIZE, getCorrectedTheta(odometer)); // update the x, y, and theta
-        }
-    	
+		// walk around tree to detect rings on top and bottom level
+    	int path[] = {1,2,3,0};
+    	for (int level = 0; level<2; level++) {
+	    	for (int side=0; side<path.length; side++) {
+	    		nav.travelTo(route[path[side]][0], route[path[side]][1], false);
+		    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
+		    	  if (colourFilter < FILTER_LIMIT) {
+		    	    ringArray[path[side]][level] = detectRing(colorMean, colorData);
+		    	    if (ringArray[path[side]][level] == pastColour && pastColour != Color.NONE) {
+		    	      colourFilter++;
+		    	      if (colourFilter == FILTER_LIMIT) beepRing(ringArray[path[side]][level]);
+		    	    } else {
+		    	      colourFilter = 0;
+		    	    }
+		    	    pastColour = ringArray[path[side]][level];
+		    	  }
+		    	  
+				}
+		    	colourFilter = 0;
+		    	nav.move(true, true, false, true, LIGHT_SENSOR_Y_OFFSET+4, FORWARD_SPEED); // back up to be able to do localization
+		    	ll.lightCorrection();
+		    	nav.move(true, true, false, true, TILE_SIZE*0.4-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
+		        odometer.setXYT(route[path[side]][0]*TILE_SIZE, route[path[side]][1]*TILE_SIZE, getCorrectedTheta(odometer)); // update the x, y and theta
+	    	}
+	    	backMotor.rotate(sensorRotate); // move light sensor to bottom row of rings height
+	 		// TODO: Think of how to lower arm if there's a wall in the way
+	    	sensorRotate = -sensorRotate;
+      	}
+
+    	// picking up rings
     	int currentSide= 0;
     	while (ringsRemaining(ringArray) > 0) {
     		// find most valuable ring
     		int[] sideAndLevel = getMostValuableRing(ringArray); // array is [side,level]
     		int side = sideAndLevel[0];
+    		System.out.println("Traveling to side #: "+side);
     		int level = sideAndLevel[1];
         	ringArray = resetRing(sideAndLevel[0], sideAndLevel[1], ringArray); // reset ring value so we don't pick it up again
         	
         	while(!canTravelStraight(currentSide, side)) {
-        		currentSide = (currentSide+1)%3;
+        		currentSide = (currentSide+1)%4;
+        		System.out.println("Go through side #: "+currentSide);
         		nav.travelTo(route[currentSide][0], route[currentSide][1], true);
         	}
         	
-    		int rightSide = (side-1)%3;        	
-        	double middle[] = {(route[side][0]+route[rightSide][0])/2, (route[side][1]+route[rightSide][1])/2 };
-    		
-        	nav.travelTo(middle[0], middle[1], true); // travel to middle of square
+        	double middle[] = {(route[side][0]+route[currentSide][0])/2, (route[side][1]+route[currentSide][1])/2 };
+    		System.out.println("Middle is: ("+middle[0]+","+middle[1]+")");
+        	nav.travelTo(middle[0]+0.11, middle[1], true); // travel to middle of square
         	
         	nav.rotate(true, 90, true); // rotate towards tree
-        	nav.move(true, true, false, true, 5, FORWARD_SPEED); // TODO: test value // back off a bit to lower arm
-        	int rotateAngle = (level == 1) ? 90 : 40; // TODO: test values // lower arm depending on level
+        	nav.move(true, true, false, true, 11, FORWARD_SPEED); // TODO: test value // back off a bit to lower arm
+        	int rotateAngle = (level == 1) ? 70 : 40; // TODO: test values // lower arm depending on level
     		medMotor.rotate(rotateAngle); //TODO: test value // lower arm
         	nav.move(true, true, true, true, 8, FORWARD_SPEED); // TODO: test value // move close enough to ring
         	medMotor.rotate(-rotateAngle); // bring arm back up
+        	nav.move(true, true, false, true, 8, FORWARD_SPEED);
         	nav.travelTo(middle[0], middle[1], true); // travel back to middle
     		nav.travelTo(route[currentSide][0], route[currentSide][1], true); // travel back to starting corner
     	}
@@ -277,7 +260,7 @@ public class RingRetriever {
 	}
 
 	private static boolean canTravelStraight(int from, int to) {
-		if (from == to || from == to+1) {
+		if (from == to || from+1 == to) {
 			return true;
 		} else {
 			return false;
@@ -384,7 +367,7 @@ public class RingRetriever {
 	    // is the call nav.move(true, true, false, true, TILE_SIZE*0.4-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED); at line 207 and 233
 	  
 	    // I argue to lower it to 0.6-0.7 should work too, and is an more accurate odometer update
-		double distanceFromTree=0.85;
+		double distanceFromTree=0.7;
 		
 		// determine 4 points around tree and their distances from the given starting point
 		double[] bottomLeft = {ringsetx-distanceFromTree, ringsety-distanceFromTree};
