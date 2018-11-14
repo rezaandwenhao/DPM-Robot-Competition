@@ -79,6 +79,8 @@ public class RingRetriever {
 			new EV3LargeRegulatedMotor(LocalEV3.get().getPort("C"));
 	private static final EV3LargeRegulatedMotor backMotor =
 			new EV3LargeRegulatedMotor(LocalEV3.get().getPort("A"));
+	private static final EV3MediumRegulatedMotor medMotor = 
+			new EV3MediumRegulatedMotor(LocalEV3.get().getPort("D"));
 	private static final Port usPort = LocalEV3.get().getPort("S2");
 	private static final Port lightLPort = LocalEV3.get().getPort("S1");
 	private static final Port lightRPort = LocalEV3.get().getPort("S4");
@@ -236,7 +238,6 @@ public class RingRetriever {
         }
     	
     	int currentSide= 0;
- 		
     	while (ringsRemaining(ringArray) > 0) {
     		// find most valuable ring
     		int[] sideAndLevel = getMostValuableRing(ringArray); // array is [side,level]
@@ -252,9 +253,16 @@ public class RingRetriever {
     		int rightSide = (side-1)%3;        	
         	double middle[] = {(route[side][0]+route[rightSide][0])/2, (route[side][1]+route[rightSide][1])/2 };
     		
-        	nav.travelTo(middle[0], middle[1], true);
+        	nav.travelTo(middle[0], middle[1], true); // travel to middle of square
         	
-        	nav.rotate(true, 90, true);
+        	nav.rotate(true, 90, true); // rotate towards tree
+        	nav.move(true, true, false, true, 5, FORWARD_SPEED); // TODO: test value // back off a bit to lower arm
+        	int rotateAngle = (level == 1) ? 90 : 40; // TODO: test values // lower arm depending on level
+    		medMotor.rotate(rotateAngle); //TODO: test value // lower arm
+        	nav.move(true, true, true, true, 8, FORWARD_SPEED); // TODO: test value // move close enough to ring
+        	medMotor.rotate(-rotateAngle); // bring arm back up
+        	nav.travelTo(middle[0], middle[1], true); // travel back to middle
+    		nav.travelTo(route[currentSide][0], route[currentSide][1], true); // travel back to starting corner
     	}
 
 	}
