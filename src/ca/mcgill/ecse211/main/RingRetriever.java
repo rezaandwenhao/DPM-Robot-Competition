@@ -84,8 +84,10 @@ public class RingRetriever {
 	public static final int BACK_UPPER_RING = 0;
 	
 	// Distances for moving on a side TODO: Wenhao please change
-	public static final int FIRST_HALF_DISTANCE = 30;
-	public static final int SECOND_HALF_DISTANCE = 30;
+	public static final double FIRST_HALF_DISTANCE = 30;
+	public static final double SECOND_HALF_DISTANCE = 30;
+	public static final double PICK_UP_DISTANCE = LIGHT_SENSOR_Y_OFFSET;
+
 
 	
 	// Objects
@@ -185,6 +187,17 @@ public class RingRetriever {
 		double[] startingPoint = {exitInfo[0], exitInfo[1]}; // this point should be where the robot is currently
 		double[][] route = getFastestRoute(startingPoint);
 		
+		// each corner has a side associated to it and vice-versa like this
+		//               side 2        			
+		// corner 1 ________________  corner 2
+		//		   |                |
+		//         |                |
+		// side 1  |      tree      | side 3
+		//         |                |
+		//         |                |
+		//         |________________|
+		// corner 0      side 0      corner 3
+		
 		// navigate to tree
 		nav.travelTo(route[0][0], route[0][1], true);
 		
@@ -204,7 +217,6 @@ public class RingRetriever {
  	    int ringArray[][] = { { Color.NONE, Color.NONE }, { Color.NONE, Color.NONE}, { Color.NONE, Color.NONE}, { Color.NONE, Color.NONE } };
  	    
  	    int colourFilter = 0; int pastColour = Color.NONE;
- 	    int sensorRotate = -60;
 		// walk around tree to detect rings on top and bottom level
     	int path[] = {1,2,3,0};
     	for (int side=0; side<path.length; side++) {
@@ -252,7 +264,7 @@ public class RingRetriever {
     	}
 
     	// picking up rings
-    	int currentSide= 0;
+    	int currentSide = 0;
     	while (ringsRemaining(ringArray) > 0) {
     		// find most valuable ring
     		int[] sideAndLevel = getMostValuableRing(ringArray); // array is [side,level]
@@ -261,15 +273,85 @@ public class RingRetriever {
     		int level = sideAndLevel[1];
         	ringArray = resetRing(sideAndLevel[0], sideAndLevel[1], ringArray); // reset ring value so we don't pick it up again
         	
-        	while(!canTravelStraight(currentSide, side)) {
-        		currentSide = (currentSide+1)%4;
-        		System.out.println("Go through side #: "+currentSide);
-        		nav.travelTo(route[currentSide][0], route[currentSide][1], true);
+        	// Answers the question: If we're at "currentSide" and we want to go to "side" how do we get there efficiently
+        	switch (currentSide) {
+        	case 0:
+        		switch (side) {
+            	case 0:
+            		nav.turnTo(route[3][0], route[3][1]);
+            		break;
+            	case 1:
+            		nav.turnTo(route[1][0], route[1][1]);
+            		break;
+            	case 2:
+            		nav.travelTo(route[1][0], route[1][1], true);
+            		nav.turnTo(route[2][0], route[2][1]);
+                	break;
+            	case 3:
+            		nav.travelTo(route[3][0], route[3][1], true);
+            		nav.turnTo(route[2][0], route[2][1]);
+            		break;
+            	}
+        		break;
+        	case 1:
+        		switch (side) {
+            	case 0:
+            		nav.travelTo(route[0][0], route[0][1], true);
+            		nav.turnTo(route[3][0], route[3][1]);
+            		break;
+            	case 1:
+            		nav.turnTo(route[0][0], route[0][1]);
+            		break;
+            	case 2:
+            		nav.turnTo(route[2][0], route[2][1]);
+                	break;
+            	case 3:
+            		nav.travelTo(route[2][0], route[2][1], true);
+            		nav.turnTo(route[3][0], route[3][1]);
+            		break;
+            	}
+        		break;
+        	case 2:
+        		switch (side) {
+            	case 0:
+            		nav.travelTo(route[3][0], route[3][1], true);
+            		nav.turnTo(route[0][0], route[0][1]);
+            		break;
+            	case 1:
+            		nav.travelTo(route[1][0], route[1][1], true);
+            		nav.turnTo(route[0][0], route[0][1]);
+            		break;
+            	case 2:
+            		nav.turnTo(route[1][0], route[1][1]);
+                	break;
+            	case 3:
+            		nav.turnTo(route[3][0], route[3][1]);
+            		break;
+            	}
+            	break;
+        	case 3:
+        		switch (side) {
+            	case 0:
+            		nav.turnTo(route[0][0], route[0][1]);
+            		break;
+            	case 1:
+            		nav.travelTo(route[0][0], route[0][1], true);
+            		nav.turnTo(route[1][0], route[1][1]);
+            		break;
+            	case 2:
+            		nav.travelTo(route[2][0], route[2][1], true);
+            		nav.turnTo(route[1][0], route[1][1]);
+                	break;
+            	case 3:
+            		nav.turnTo(route[2][0], route[2][1]);
+            		break;
+            	}
+        		break;
         	}
         	
-        	double middle[] = {(route[side][0]+route[currentSide][0])/2, (route[side][1]+route[currentSide][1])/2 };
-    		System.out.println("Middle is: ("+middle[0]+","+middle[1]+")");
-        	nav.travelTo(middle[0]+0.11, middle[1], true); // travel to middle of square
+        	ll.lightCorrection();
+        	
+        	nav.move(true, true, true, true, PICK_UP_DISTANCE, FORWARD_SPEED);
         	
         	nav.rotate(true, 90, true); // rotate towards tree
         	nav.move(true, true, false, true, 11, FORWARD_SPEED); // TODO: test value // back off a bit to lower arm
@@ -278,8 +360,8 @@ public class RingRetriever {
         	nav.move(true, true, true, true, 8, FORWARD_SPEED); // TODO: test value // move close enough to ring
         	medMotor.rotate(-rotateAngle); // bring arm back up
         	nav.move(true, true, false, true, 8, FORWARD_SPEED);
-        	nav.travelTo(middle[0], middle[1], true); // travel back to middle
-    		nav.travelTo(route[currentSide][0], route[currentSide][1], true); // travel back to starting corner
+        	nav.travelTo(route[side][0], route[side][0], true);
+        	currentSide = side;
     	}
     	
     	// travel back to closest corner
