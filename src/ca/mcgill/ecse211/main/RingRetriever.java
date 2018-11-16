@@ -72,6 +72,22 @@ public class RingRetriever {
 	public static final int ULTRASONIC_OFFSET = -90;
 	public static final int FILTER_LIMIT = 10;
 	
+	// Angles for motors
+	public static final int MED_DOWN = 90;
+	public static final int MED_LOWER_RING = 80;
+	public static final int MED_UPPER_RING = 60;
+	public static final int MED_UP = 0;
+
+	public static final int BACK_DOWN = 10;
+	public static final int BACK_UP = 0;
+	public static final int BACK_LOWER_RING = 60;
+	public static final int BACK_UPPER_RING = 0;
+	
+	// Distances for moving on a side
+	public static final int FIRST_HALF_DISTANCE = 30;
+	public static final int SECOND_HALF_DISTANCE = 30;
+
+	
 	// Objects
 	private static final EV3LargeRegulatedMotor leftMotor = 
 			new EV3LargeRegulatedMotor(LocalEV3.get().getPort("B"));
@@ -191,37 +207,49 @@ public class RingRetriever {
  	    int sensorRotate = -60;
 		// walk around tree to detect rings on top and bottom level
     	int path[] = {1,2,3,0};
-    	for (int level = 0; level<2; level++) {
-	    	for (int side=0; side<path.length; side++) {
-	    		nav.travelTo(route[path[side]][0], route[path[side]][1], false);
-		    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
-		    	  if (colourFilter < FILTER_LIMIT) {
-		    	    ringArray[path[side]][level] = detectRing(colorMean, colorData);
-		    	    if (ringArray[path[side]][level] == pastColour && pastColour != Color.NONE) {
-		    	      colourFilter++;
-		    	      if (colourFilter == FILTER_LIMIT) beepRing(ringArray[path[side]][level]);
-		    	    } else {
-		    	      colourFilter = 0;
-		    	    }
-		    	    pastColour = ringArray[path[side]][level];
-		    	  }
-		    	  
-				}
-		    	colourFilter = 0;
-		    	
-				usMean.fetchSample(usData, 0); // acquire data
-				int distance = (int) (usData[0] * 100.0); // extract from buffer, cast to int
-				if (distance > 30) {
-					nav.move(true, true, false, true, LIGHT_SENSOR_Y_OFFSET+4, FORWARD_SPEED); // back up to be able to do localization
-			    	ll.lightCorrection();
-			    	nav.move(true, true, false, true, TILE_SIZE*0.4-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
-			        odometer.setXYT(route[path[side]][0]*TILE_SIZE, route[path[side]][1]*TILE_SIZE, getCorrectedTheta(odometer)); // update the x, y and theta
-				}
-	    	}
-	    	backMotor.rotate(sensorRotate); // move light sensor to bottom row of rings height
-	 		// TODO: Think of how to lower arm if there's a wall in the way
-	    	sensorRotate = -sensorRotate;
-      	}
+    	for (int side=0; side<path.length; side++) {
+    		nav.turnTo(route[path[side]][0], route[path[side]][1]);
+    		ll.lightCorrection();
+    		// TODO: Correct ODOMETER
+    		
+    		// TOP LEVEL RING DETECTION
+    		
+    		nav.move(true, true, true, false, FIRST_HALF_DISTANCE, FORWARD_SPEED);
+	    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
+	    		// detect color of ring
+	    		if (colourFilter < FILTER_LIMIT) {
+	    	    ringArray[path[side]][0] = detectRing(colorMean, colorData);
+	    	    if (ringArray[path[side]][0] == pastColour && pastColour != Color.NONE) {
+	    	      colourFilter++;
+	    	      if (colourFilter == FILTER_LIMIT) beepRing(ringArray[path[side]][0]);
+	    	    } else {
+	    	      colourFilter = 0;
+	    	    }
+	    	    pastColour = ringArray[path[side]][0];
+	    	  }
+			}
+	    	colourFilter = 0;
+	    	
+    		// BOTTOM LEVEL RING DETECTION
+	    	backMotor.rotateTo(BACK_LOWER_RING);
+	    	
+	    	nav.move(true, true, true, false, SECOND_HALF_DISTANCE, FORWARD_SPEED);
+	    	while(leftMotor.isMoving() && rightMotor.isMoving()) {
+	    		// detect color of ring
+	    		if (colourFilter < FILTER_LIMIT) {
+	    	    ringArray[path[side]][1] = detectRing(colorMean, colorData);
+	    	    if (ringArray[path[side]][1] == pastColour && pastColour != Color.NONE) {
+	    	      colourFilter++;
+	    	      if (colourFilter == FILTER_LIMIT) beepRing(ringArray[path[side]][1]);
+	    	    } else {
+	    	      colourFilter = 0;
+	    	    }
+	    	    pastColour = ringArray[path[side]][1];
+	    	  }
+			}
+	    	colourFilter = 0;
+	    	backMotor.rotateTo(BACK_UPPER_RING);
+    	}
 
     	// picking up rings
     	int currentSide= 0;
@@ -253,7 +281,45 @@ public class RingRetriever {
         	nav.travelTo(middle[0], middle[1], true); // travel back to middle
     		nav.travelTo(route[currentSide][0], route[currentSide][1], true); // travel back to starting corner
     	}
-
+    	
+    	// travel back to closest corner
+    	while(!canTravelStraight(currentSide, 0)) {
+    		currentSide = (currentSide+1)%4;
+    		System.out.println("Go through side #: "+currentSide);
+    		nav.travelTo(route[currentSide][0], route[currentSide][1], true);
+    	}
+    	
+    	// travel back to tunnel exit
+    	nav.travelTo(exitInfo[0], exitInfo[1], true);
+		exitInfo[2] = exitInfo[2]-180; // reverse theta to have robot end point towards tunnel
+    	ll.tunnelLocalization(exitInfo, true);
+    	
+    	// move through tunnel
+	    nav.move(true, true, true, true, TILE_SIZE, FORWARD_SPEED);        
+	    nav.move(true, true, true, true, TILE_SIZE, ROTATE_SPEED);
+		nav.move(false, true, true, true, 1, ROTATE_SPEED); // brute force offset, turn left a bit in the tunnel
+		nav.move(true, true, true, true, TILE_SIZE*3-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
+		
+		// move to center of our zone
+		int[] middleZone = {zoneURx-zoneLLx, zoneURy-zoneLLy};
+		nav.travelTo(middleZone[0], middleZone[1], true);
+		
+		// unload rings
+		
+		// drop both ends of the robot
+		medMotor.rotateTo(MED_DOWN);
+		backMotor.rotateTo(BACK_DOWN);
+		
+		// shake to unload rings
+		boolean alternate = true;
+		int shakeCounter = 0;
+		while(shakeCounter++ < 20) {
+			nav.move(true, true, alternate, true, 3, 1000);
+			alternate = !alternate;
+		}
+		
+		// end
+		System.exit(0);
 	}
 	
 	private static double getCorrectedTheta(Odometer odo) {

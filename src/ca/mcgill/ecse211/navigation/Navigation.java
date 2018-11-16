@@ -66,13 +66,35 @@ public class Navigation {
 		if (deltaY < 0) {
 			desiredAngle += 180.0d;
 		}
-	 
+
 		turnTo(desiredAngle);
 	  
 		//move forwards to reach the point x,y.
 		move(true, true, true, wait, hypotenuse, RingRetriever.FORWARD_SPEED);
 	}
+	
+	public void turnTo(double x, double y) {
+		double currentPos[] = odo.getXYT();
+		  
+		//difference in position
+		double deltaX = x*RingRetriever.TILE_SIZE-currentPos[0];
+		double deltaY = y*RingRetriever.TILE_SIZE-currentPos[1];
 	  
+		// length of straight line from current position to desired position
+		double hypotenuse = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
+	  
+		//angle from hypotenuse to X axis
+		if (deltaY == 0) deltaY = 0.0001;
+		double desiredAngle = Math.atan(deltaX/deltaY)*57.2957795131d;
+	  
+		// adjust desired angle to desired position
+		if (deltaY < 0) {
+			desiredAngle += 180.0d;
+		}
+
+		turnTo(desiredAngle);
+	}
+	
 	/**
 	 * This method turns the robot from currentAngle to angle theta in the most efficient direction.
 	 * Calculations are performed to ensure the robot is turning in the smallest possible angle.
