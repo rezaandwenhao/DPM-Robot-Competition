@@ -94,19 +94,6 @@ public class RingRetriever {
 	 * @throws OdometerExceptions
 	 */
 	public static void main(String args[])  throws OdometerExceptions {	  
-   	    Wifi wifi = new Wifi();
-		Map data = wifi.getData();
-		
-		fillGlobalData(data);
-		
-		// Odometer
-		Odometer odometer = Odometer.getOdometer(leftMotor, rightMotor, TRACK, WHEEL_RAD);
-		Thread odoThread = new Thread(odometer);
-		odoThread.start();
-		
-		// Navigation
-	    Navigation nav = new Navigation(leftMotor, rightMotor, WHEEL_RAD, WHEEL_RAD, TRACK, odometer);
-
 		// Initializing Ultrasonic Sensor and runs it in this thread
 		@SuppressWarnings("resource") // Because we don't bother to close this resource
 		SensorModes usSensor = new EV3UltrasonicSensor(usPort); // usSensor is the instance
@@ -128,6 +115,19 @@ public class RingRetriever {
  		SampleProvider lightRMean = new MeanFilter(lightRSample, 5); // use a mean filter to reduce fluctuations
  	    float[] lightRData = new float[lightRMean.sampleSize()]; // usData is the buffer in which data are returned
 	   
+		Wifi wifi = new Wifi();
+		Map data = wifi.getData();
+		
+		fillGlobalData(data);
+		
+		// Odometer
+		Odometer odometer = Odometer.getOdometer(leftMotor, rightMotor, TRACK, WHEEL_RAD);
+		Thread odoThread = new Thread(odometer);
+		odoThread.start();
+		
+		// Navigation
+	    Navigation nav = new Navigation(leftMotor, rightMotor, WHEEL_RAD, WHEEL_RAD, TRACK, odometer);
+	    
  	    Localization ll = new Localization(lightLMean, lightRMean, usMean, lightLData, lightRData, usData, nav, odometer, lcd);
 	   
 		// localize to the closest intersection

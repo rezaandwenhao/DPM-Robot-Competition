@@ -87,8 +87,6 @@ public class Wifi {
       System.err.println("Error: " + e.getMessage());
     }
 
-    // Wait until user decides to end program
-    Button.waitForAnyPress();
     return data;
   }
 }
