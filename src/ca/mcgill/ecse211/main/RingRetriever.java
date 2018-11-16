@@ -131,32 +131,34 @@ public class RingRetriever {
  	    Localization ll = new Localization(lightLMean, lightRMean, usMean, lightLData, lightRData, usData, nav, odometer, lcd);
 	   
 		// localize to the closest intersection
-// 	    ll.fallingEdge();
-//		ll.lightCorrection();
-//	    odometer.setXYT(odometer.getXYT()[0], 0-LIGHT_SENSOR_Y_OFFSET, 0); // reset Y and Theta
-//	    nav.move(true, true, false, true, 5, FORWARD_SPEED);
-//	    nav.rotate(true, 90, true);
-//	    ll.lightCorrection();
-//	    odometer.setXYT(0-LIGHT_SENSOR_X_OFFSET, odometer.getXYT()[1], 90);
-//	    nav.travelTo(0, 0, true);
-//	    nav.turnTo(0);
+ 	    ll.fallingEdge();
+		ll.lightCorrection();
+	    odometer.setXYT(odometer.getXYT()[0], 0-LIGHT_SENSOR_Y_OFFSET, 0); // reset Y and Theta
+	    nav.move(true, true, false, true, 5, FORWARD_SPEED);
+	    nav.rotate(true, 90, true);
+	    ll.lightCorrection();
+	    odometer.setXYT(0-LIGHT_SENSOR_X_OFFSET, odometer.getXYT()[1], 90);
+	    nav.travelTo(0, 0, true);
+	    nav.turnTo(0);
 	    
 	    // correct position depending on given start corner
-//		odometer.setStartingCoordinates(startingCorner);
+		odometer.setStartingCoordinates(startingCorner);
+		
+		Sound.beep();Sound.beep();Sound.beep();
 		
 		// navigate to tunnel
 		// entranceInfo is X,Y,THETA where THETA is the angle of the entrance to the tunnel
-//		double[] entranceInfo = getEntrance();
-//		nav.travelTo(entranceInfo[0], entranceInfo[1], true);
+		double[] entranceInfo = getEntrance();
+		nav.travelTo(entranceInfo[0], entranceInfo[1], true);
 		
 		// localize to "entrance" of tunnel
-//		ll.tunnelLocalization(entranceInfo, false);
+		ll.tunnelLocalization(entranceInfo, false);
 		
 		// move through tunnel
-//	    nav.move(true, true, true, true, TILE_SIZE, FORWARD_SPEED);        
-//	    nav.move(true, true, true, true, TILE_SIZE, ROTATE_SPEED);
-//		nav.move(false, true, true, true, 1, ROTATE_SPEED); // brute force offset, turn left a bit in the tunnel
-//		nav.move(true, true, true, true, TILE_SIZE*3-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
+	    nav.move(true, true, true, true, TILE_SIZE, FORWARD_SPEED);        
+	    nav.move(true, true, true, true, TILE_SIZE, ROTATE_SPEED);
+		nav.move(false, true, true, true, 1, ROTATE_SPEED); // brute force offset, turn left a bit in the tunnel
+		nav.move(true, true, true, true, TILE_SIZE*3-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
 		
 		// localize to exit of tunnel
 		double[] exitInfo = getExit();
@@ -186,8 +188,7 @@ public class RingRetriever {
  	    int ringArray[][] = { { Color.NONE, Color.NONE }, { Color.NONE, Color.NONE}, { Color.NONE, Color.NONE}, { Color.NONE, Color.NONE } };
  	    
  	    int colourFilter = 0; int pastColour = Color.NONE;
-    	int sensorRotate = -60;
-
+ 	    int sensorRotate = -60;
 		// walk around tree to detect rings on top and bottom level
     	int path[] = {1,2,3,0};
     	for (int level = 0; level<2; level++) {
@@ -207,10 +208,15 @@ public class RingRetriever {
 		    	  
 				}
 		    	colourFilter = 0;
-		    	nav.move(true, true, false, true, LIGHT_SENSOR_Y_OFFSET+4, FORWARD_SPEED); // back up to be able to do localization
-		    	ll.lightCorrection();
-		    	nav.move(true, true, false, true, TILE_SIZE*0.4-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
-		        odometer.setXYT(route[path[side]][0]*TILE_SIZE, route[path[side]][1]*TILE_SIZE, getCorrectedTheta(odometer)); // update the x, y and theta
+		    	
+				usMean.fetchSample(usData, 0); // acquire data
+				int distance = (int) (usData[0] * 100.0); // extract from buffer, cast to int
+				if (distance > 30) {
+					nav.move(true, true, false, true, LIGHT_SENSOR_Y_OFFSET+4, FORWARD_SPEED); // back up to be able to do localization
+			    	ll.lightCorrection();
+			    	nav.move(true, true, false, true, TILE_SIZE*0.4-LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
+			        odometer.setXYT(route[path[side]][0]*TILE_SIZE, route[path[side]][1]*TILE_SIZE, getCorrectedTheta(odometer)); // update the x, y and theta
+				}
 	    	}
 	    	backMotor.rotate(sensorRotate); // move light sensor to bottom row of rings height
 	 		// TODO: Think of how to lower arm if there's a wall in the way
