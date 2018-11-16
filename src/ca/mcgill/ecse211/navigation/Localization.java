@@ -30,7 +30,6 @@ public class Localization {
 	private float[] lightDataL;
 	private float[] lightDataR;
 	private float[] usData;
-	private TextLCD lcd;
 
 	// Parameters 
 	private static final int CORRECTION_ANGLE1 = 225;
@@ -38,13 +37,16 @@ public class Localization {
 	private static final int CORRECTION_TIMEOUT = 3000;
 	private static final int VOID_THRESHOLD = 30;
 	private static final int VOID_BAND = 3;
-	private static final int R_COLOR_THRESHOLD = 20;
-	private static final int L_COLOR_THRESHOLD = 17;
+	private static final int LIGHT_THRESHOLD = 20; // %
 	private static final int CORRECTION_SPEED = 50;
 
 	
 	// Global variables
 	private boolean pastView = false;
+	private static float light;
+	private static float nowLight;
+	private static float pastLight = -1;
+	
 	
 	public Localization(SampleProvider lightMeanL, SampleProvider lightMeanR, SampleProvider usMean, 
 			float[] lightDataL, float[] lightDataR, float[] usData, Navigation nav, Odometer odo, TextLCD lcd) {
@@ -56,7 +58,6 @@ public class Localization {
 		this.usData = usData;
 		this.nav = nav;
 		this.odo = odo;
-		this.lcd = lcd;
 	}
 	
 	/**
@@ -114,59 +115,27 @@ public class Localization {
 	public void lightCorrection() {
 		nav.stopMotors();
 	   
-	    // Read both sensors once at first
-	    lightMeanL.fetchSample(lightDataL, 0); // acquire data
-		int lightL = (int) (lightDataL[0] * 100.0); // extract from buffer, cast to int
-		
-		lightMeanR.fetchSample(lightDataR, 0); // acquire data
-		int lightR = (int) (lightDataR[0] * 100.0); // extract from buffer, cast to int
-		
 		// Move forwards until first sensor hits line
 		nav.move(true, true, true, false, 30, CORRECTION_SPEED);
-		while (lightL > L_COLOR_THRESHOLD && lightR > R_COLOR_THRESHOLD) { // move forward until you hit a black band
-			lightMeanL.fetchSample(lightDataL, 0); // acquire data
-			lightL = (int) (lightDataL[0] * 100.0); // extract from buffer, cast to int
-			lightMeanR.fetchSample(lightDataR, 0); // acquire data
-			lightR = (int) (lightDataR[0] * 100.0); // extract from buffer, cast to int
+		
+		boolean leftLightDetected = false;
+		boolean rightLightDetected = false; 
+		while (!leftLightDetected && !rightLightDetected) { // move forward until you hit a black band
+			leftLightDetected = seeingLine(lightMeanL, lightDataL);
+			rightLightDetected = seeingLine(lightMeanR, lightDataR);
 		}
 		Sound.beep();
 		nav.stopMotors();
 		
 		// Move whichever sensor didn't hit line until it hits the line
-		if (lightL > L_COLOR_THRESHOLD) {
-			boolean timeout = false;
-			boolean forwards = true;
-			do {
-				nav.move(true, false, forwards, false, 10, CORRECTION_SPEED);
-				long timeoutSnapshot = System.currentTimeMillis();
-				while (lightL > L_COLOR_THRESHOLD) {
-					lightMeanL.fetchSample(lightDataL, 0); // acquire data
-					lightL = (int) (lightDataL[0] * 100.0); // extract from buffer, cast to int
-					if (System.currentTimeMillis() - timeoutSnapshot > CORRECTION_TIMEOUT) {
-						timeout = true;
-						forwards = !forwards;
-						break;
-					}
-				}	
-			} while (timeout);
+		if (leftLightDetected) { // Left detected so move right motor
+			nav.move(false, true, true, false, 10, CORRECTION_SPEED);
+			while (!seeingLine(lightMeanR, lightDataR));
 			Sound.beep();
 			nav.stopMotors();
-		} else if (lightR > R_COLOR_THRESHOLD) {
-			boolean timeout = false;
-			boolean forwards = true;
-			do {
-				nav.move(false, true, true, false, 10, CORRECTION_SPEED);
-				long timeoutSnapshot = System.currentTimeMillis();
-				while (lightR > R_COLOR_THRESHOLD) {
-					lightMeanR.fetchSample(lightDataR, 0); // acquire data
-					lightR = (int) (lightDataR[0] * 100.0); // extract from buffer, cast to int
-					if (System.currentTimeMillis() - timeoutSnapshot > CORRECTION_TIMEOUT) {
-						timeout = true;
-						forwards = !forwards;
-						break;
-					}
-				}
-			} while (timeout);
+		} else if (rightLightDetected) { // Right detected so move left motor
+			nav.move(true, false, true, false, 10, CORRECTION_SPEED);
+			while (!seeingLine(lightMeanL, lightDataL));
 			Sound.beep();
 			nav.stopMotors();
 		}
@@ -192,6 +161,19 @@ public class Localization {
 		} else {
 			return pastView;
 		}
+	}
+	
+	boolean seeingLine(SampleProvider lightMean, float[] lightData) {
+		lightMean.fetchSample(lightData,0);	// acquire data
+		nowLight=lightData[0]*100;
+		
+		if(100*Math.abs(nowLight - pastLight)/pastLight > LIGHT_THRESHOLD){
+			if (nowLight < pastLight){
+				return true;
+			}
+		}
+		pastLight = nowLight;
+		return false;
 	}
 	
 	/**

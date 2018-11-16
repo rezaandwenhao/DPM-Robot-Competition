@@ -72,7 +72,7 @@ public class RingRetriever {
 	public static final int ULTRASONIC_OFFSET = -90;
 	public static final int FILTER_LIMIT = 10;
 	
-	// Angles for motors
+	// Angles for motors TODO: Wenhao please change
 	public static final int MED_DOWN = 90;
 	public static final int MED_LOWER_RING = 80;
 	public static final int MED_UPPER_RING = 60;
@@ -83,7 +83,7 @@ public class RingRetriever {
 	public static final int BACK_LOWER_RING = 60;
 	public static final int BACK_UPPER_RING = 0;
 	
-	// Distances for moving on a side
+	// Distances for moving on a side TODO: Wenhao please change
 	public static final int FIRST_HALF_DISTANCE = 30;
 	public static final int SECOND_HALF_DISTANCE = 30;
 
