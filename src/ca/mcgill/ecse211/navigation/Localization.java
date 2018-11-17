@@ -15,6 +15,7 @@ import ca.mcgill.ecse211.odometer.Odometer;
 import lejos.hardware.Sound;
 import lejos.hardware.lcd.TextLCD;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
+import lejos.hardware.motor.Motor;
 import lejos.robotics.SampleProvider;
 
 public class Localization {
@@ -37,15 +38,19 @@ public class Localization {
 	private static final int CORRECTION_TIMEOUT = 3000;
 	private static final int VOID_THRESHOLD = 30;
 	private static final int VOID_BAND = 3;
-	private static final int LIGHT_THRESHOLD = 20; // %
-	private static final int CORRECTION_SPEED = 50;
+	private static final int LIGHT_THRESHOLD = 5; // %
+	private static final int FORWARD_CORRECTION_SPEED = 80;
+	private static final int ROTATE_CORRECTION_SPEED = 50;
 
 	
 	// Global variables
 	private boolean pastView = false;
-	private static float light;
-	private static float nowLight;
-	private static float pastLight = -1;
+	private static float lightL;
+	private static float nowLightL;
+	private static float pastLightL = -1;
+	private static float lightR;
+	private static float nowLightR;
+	private static float pastLightR = -1;
 	
 	
 	public Localization(SampleProvider lightMeanL, SampleProvider lightMeanR, SampleProvider usMean, 
@@ -116,26 +121,30 @@ public class Localization {
 		nav.stopMotors();
 	   
 		// Move forwards until first sensor hits line
-		nav.move(true, true, true, false, 30, CORRECTION_SPEED);
+		nav.move(true, true, true, false, 30, FORWARD_CORRECTION_SPEED);
 		
 		boolean leftLightDetected = false;
 		boolean rightLightDetected = false; 
 		while (!leftLightDetected && !rightLightDetected) { // move forward until you hit a black band
-			leftLightDetected = seeingLine(lightMeanL, lightDataL);
-			rightLightDetected = seeingLine(lightMeanR, lightDataR);
+			leftLightDetected = seeingLine(true);
+			rightLightDetected = seeingLine(false);
 		}
 		Sound.beep();
 		nav.stopMotors();
 		
 		// Move whichever sensor didn't hit line until it hits the line
-		if (leftLightDetected) { // Left detected so move right motor
-			nav.move(false, true, true, false, 10, CORRECTION_SPEED);
-			while (!seeingLine(lightMeanR, lightDataR));
+		if (leftLightDetected && rightLightDetected) {
+			nav.stopMotors();
+		} else if (leftLightDetected) {
+			nav.move(true, false, false, true, 3, FORWARD_CORRECTION_SPEED);
+			nav.move(true, false, true, false, 10, ROTATE_CORRECTION_SPEED);
+			while (!seeingLine(false));
 			Sound.beep();
 			nav.stopMotors();
-		} else if (rightLightDetected) { // Right detected so move left motor
-			nav.move(true, false, true, false, 10, CORRECTION_SPEED);
-			while (!seeingLine(lightMeanL, lightDataL));
+		} else if (rightLightDetected) {
+			nav.move(true, false, false, true, 3, FORWARD_CORRECTION_SPEED);
+			nav.move(true, false, true, false, 10, ROTATE_CORRECTION_SPEED);
+			while (!seeingLine(true));
 			Sound.beep();
 			nav.stopMotors();
 		}
@@ -163,17 +172,32 @@ public class Localization {
 		}
 	}
 	
-	boolean seeingLine(SampleProvider lightMean, float[] lightData) {
-		lightMean.fetchSample(lightData,0);	// acquire data
-		nowLight=lightData[0]*100;
-		
-		if(100*Math.abs(nowLight - pastLight)/pastLight > LIGHT_THRESHOLD){
-			if (nowLight < pastLight){
-				return true;
+	boolean seeingLine(boolean left) {
+		if (left) {
+			lightMeanL.fetchSample(lightDataL,0);	// acquire data
+			nowLightL=lightDataL[0]*100;
+			if(100*Math.abs(nowLightL - pastLightL)/pastLightL > LIGHT_THRESHOLD){
+				if (nowLightL < pastLightL){
+					System.out.println("LEFT!");
+					pastLightL = -1;
+					return true;
+				}
 			}
+			pastLightL = nowLightL;
+			return false;
+		} else {
+			lightMeanR.fetchSample(lightDataR,0);	// acquire data
+			nowLightR=lightDataR[0]*100;
+			if(100*Math.abs(nowLightR - pastLightR)/pastLightR > LIGHT_THRESHOLD){
+				if (nowLightR < pastLightR){
+					System.out.println("RIGHT!");
+					pastLightR = -1;
+					return true;
+				}
+			}
+			pastLightR = nowLightR;
+			return false;
 		}
-		pastLight = nowLight;
-		return false;
 	}
 	
 	/**

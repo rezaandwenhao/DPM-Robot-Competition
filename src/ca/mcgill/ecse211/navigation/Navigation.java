@@ -192,4 +192,8 @@ public class Navigation {
 		motorL.stop(true);
 		motorR.stop(false);
 	}
+	
+	public boolean anyMotorMoving() {
+		return (motorL.isMoving() || motorR.isMoving());
+	}
 }
