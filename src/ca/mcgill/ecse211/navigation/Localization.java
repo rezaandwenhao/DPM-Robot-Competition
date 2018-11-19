@@ -38,7 +38,8 @@ public class Localization {
 	private static final int CORRECTION_TIMEOUT = 3000;
 	private static final int VOID_THRESHOLD = 30;
 	private static final int VOID_BAND = 3;
-	private static final int LIGHT_THRESHOLD = 5; // %
+	private static final int LIGHT_THRESHOLD_L = -15; 
+	private static final int LIGHT_THRESHOLD_R = -25; 
 	private static final int FORWARD_CORRECTION_SPEED = 80;
 	private static final int ROTATE_CORRECTION_SPEED = 50;
 
@@ -136,8 +137,8 @@ public class Localization {
 		if (leftLightDetected && rightLightDetected) {
 			nav.stopMotors();
 		} else if (leftLightDetected) {
-			nav.move(true, false, false, true, 3, FORWARD_CORRECTION_SPEED);
-			nav.move(true, false, true, false, 10, ROTATE_CORRECTION_SPEED);
+			nav.move(false, true, false, true, 3, FORWARD_CORRECTION_SPEED);
+			nav.move(false, true, true, false, 10, ROTATE_CORRECTION_SPEED);
 			while (!seeingLine(false));
 			Sound.beep();
 			nav.stopMotors();
@@ -172,33 +173,35 @@ public class Localization {
 		}
 	}
 	
-	boolean seeingLine(boolean left) {
-		if (left) {
-			lightMeanL.fetchSample(lightDataL,0);	// acquire data
-			nowLightL=lightDataL[0]*100;
-			if(100*Math.abs(nowLightL - pastLightL)/pastLightL > LIGHT_THRESHOLD){
-				if (nowLightL < pastLightL){
-					System.out.println("LEFT!");
-					pastLightL = -1;
-					return true;
-				}
-			}
-			pastLightL = nowLightL;
-			return false;
-		} else {
-			lightMeanR.fetchSample(lightDataR,0);	// acquire data
-			nowLightR=lightDataR[0]*100;
-			if(100*Math.abs(nowLightR - pastLightR)/pastLightR > LIGHT_THRESHOLD){
-				if (nowLightR < pastLightR){
-					System.out.println("RIGHT!");
-					pastLightR = -1;
-					return true;
-				}
-			}
-			pastLightR = nowLightR;
-			return false;
-		}
-	}
+        boolean seeingLine(boolean left) {
+        	if (left) {
+        	    lightMeanL.fetchSample(lightDataL, 0); // acquire data
+        	    nowLightL = lightDataL[0] * 1000;
+        	    float diff = nowLightL - pastLightL;
+        	    pastLightL = nowLightL;
+        	    System.out.println("");
+        	    System.out.println("");
+        	    System.out.println("");
+        	    if (diff < LIGHT_THRESHOLD_L) {
+        		System.out.println("");
+        		return true;
+        	    }
+        	    return false;
+        	} else {
+        	    lightMeanR.fetchSample(lightDataR, 0); // acquire data
+        	    nowLightR = lightDataR[0] * 1000;
+        	    float diff = nowLightR - pastLightR;
+        	    pastLightR = nowLightR;
+        	    System.out.println("");
+        	    System.out.println("");
+        	    System.out.println("");
+        	    if (diff < LIGHT_THRESHOLD_R) {
+        		System.out.println("");
+        		return true;
+        	    }
+        	    return false;
+        	}
+        }
 	
 	/**
 	 * This method takes the two angles detected during the falling edge and calculates zero degrees

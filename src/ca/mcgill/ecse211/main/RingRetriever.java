@@ -117,22 +117,23 @@ public class RingRetriever {
 		SensorModes usSensor = new EV3UltrasonicSensor(usPort); // usSensor is the instance
 		SampleProvider usSample = usSensor.getMode("Distance"); 
 		SampleProvider usMean = new MeanFilter(usSample, 5); // use a mean filter to reduce fluctuations
-	    float[] usData = new float[usMean.sampleSize()]; // usData is the buffer in which data are returned
+		float[] usData = new float[usMean.sampleSize()]; // usData is the buffer in which data are returned
 	    
-	    // Initializing Left Light Sensor and runs it in this thread
+		// Initializing Left Light Sensor and runs it in this thread
  		@SuppressWarnings("resource") // Because we don't bother to close this resource
  		SensorModes lightLSensor = new EV3ColorSensor(lightLPort); // usSensor is the instance
  		SampleProvider lightLSample = lightLSensor.getMode("Red"); 
  		SampleProvider lightLMean = new MeanFilter(lightLSample, 5); // use a mean filter to reduce fluctuations
- 	    float[] lightLData = new float[lightLMean.sampleSize()]; // usData is the buffer in which data are returned
+ 		float[] lightLData = new float[lightLMean.sampleSize()]; // usData is the buffer in which data are returned
 	    
- 	    // Initializing Right Light Sensor and runs it in this thread
+ 		// Initializing Right Light Sensor and runs it in this thread
  		@SuppressWarnings("resource") // Because we don't bother to close this resource
  		SensorModes lightRSensor = new EV3ColorSensor(lightRPort); // usSensor is the instance
  		SampleProvider lightRSample = lightRSensor.getMode("Red"); 
  		SampleProvider lightRMean = new MeanFilter(lightRSample, 5); // use a mean filter to reduce fluctuations
- 	    float[] lightRData = new float[lightRMean.sampleSize()]; // usData is the buffer in which data are returned
-	   
+ 		float[] lightRData = new float[lightRMean.sampleSize()]; // usData is the buffer in which data are returned
+
+ 	    
 		Wifi wifi = new Wifi();
 		Map data = wifi.getData();
 		
