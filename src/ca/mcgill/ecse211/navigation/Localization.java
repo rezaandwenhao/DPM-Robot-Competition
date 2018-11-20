@@ -38,7 +38,7 @@ public class Localization {
 	private static final int CORRECTION_TIMEOUT = 3000;
 	private static final int VOID_THRESHOLD = 30;
 	private static final int VOID_BAND = 3;
-	private static final int LIGHT_THRESHOLD_L = -15; 
+	private static final int LIGHT_THRESHOLD_L = -13; 
 	private static final int LIGHT_THRESHOLD_R = -25; 
 	private static final int FORWARD_CORRECTION_SPEED = 80;
 	private static final int ROTATE_CORRECTION_SPEED = 50;
@@ -179,6 +179,7 @@ public class Localization {
         	    nowLightL = lightDataL[0] * 1000;
         	    float diff = nowLightL - pastLightL;
         	    pastLightL = nowLightL;
+        	    System.out.println("");
         	    System.out.println("");
         	    System.out.println("");
         	    System.out.println("");
