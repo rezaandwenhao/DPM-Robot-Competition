@@ -53,8 +53,6 @@ public class RingRetriever {
     public static int tunnelURy;
     public static int ringsetx;
     public static int ringsety;
-    public static double[] tunnelEntranceCoordinates;
-    public static double[] tunnelExitCoordinates;
 
     // Running Parameters
     public static final double WHEEL_RAD = 2.13; // (cm) measured with caliper
@@ -102,9 +100,12 @@ public class RingRetriever {
     private static Localization ll;
 	
     /**
-     * This method initializes the odometer class and starts the thread It also
-     * initializes the ultrasonic sensors and uses a filter to reduce the
-     * fluctuations
+     * <h1>Main method</h1>
+     * <p>Controls and decides the robots behavior throughout the whole run.</p>
+     * <p>Manages the order of operations and the throughput of information.</p>
+     * <p>Initializes all sensors, receives game parameters from wifi, manages Odometer, Navigation, and Localization instances.
+     * Enables the robot to localize in its starting corner, navigate to the tunnel, go through the tunnel,
+     * navigate to the tree, detect the rings on the tree, pick the rings off the tree, and navigate back to the starting zone.</p> 
      * 
      * @throws OdometerExceptions
      */
@@ -234,6 +235,11 @@ public class RingRetriever {
 		System.exit(0);
     }
 	
+    /**
+     * 
+     * @param odo
+     * @return the closest multiple of 90 to the given odometer's current theta value.
+     */
 	private static double getCorrectedTheta(Odometer odo) {
 	  double theta = odo.getXYT()[2];
 	  if (330 < theta || theta < 30) return 0;
@@ -243,6 +249,11 @@ public class RingRetriever {
 	  else return theta;
 	}
 	
+	/**
+	 * 
+	 * @param ringArray
+	 * @return the numbers of rings in the given ringArray that have a value greater than 0 (i.e. number of rings still on tree).
+	 */
 	private static int ringsRemaining(int[][] ringArray) {
 		int counter = 0;
 		for (int level=0; level<2; level++) {
@@ -256,7 +267,7 @@ public class RingRetriever {
 	/**
 	 * 
 	 * @param ringArray
-	 * @return array of {side,level} of most valuable ring
+	 * @return array of [side,level] of most valuable ring.
 	 */
 	private static int[] getMostValuableRing(int[][] ringArray) {
 		int maxRing_side = 0;
@@ -273,11 +284,23 @@ public class RingRetriever {
 		return returnValue;
 	}
 	
+	/**
+	 * 
+	 * @param side
+	 * @param level
+	 * @param ringArray
+	 * @return updated ringArray with the given ring's value reset to 0 to show that this ring has been acquired.
+	 */
 	private static int[][] resetRing(int side, int level, int[][] ringArray) {
 		ringArray[side][level] = Color.NONE;
 		return ringArray;
 	}
 	
+	/**
+	 * 
+	 * @param ring
+	 * @return the value of the given Color in terms defined by the Project Definition
+	 */
 	private static int getValue(int ring) {
 		switch (ring) {
 		case Color.ORANGE:
@@ -294,8 +317,7 @@ public class RingRetriever {
 	}
 
 	/**
-	 * Beeps a certain number of times per ring according to the following
-	 * Orange: 4, Yellow: 3, Green: 2, Blue: 1, Others: 0
+	 * <p>Makes the robot beep a certain number of times depending on the value of the given ring.</p>
 	 * @param ring
 	 */
 	private static void beepRing(int ring) {
@@ -304,10 +326,10 @@ public class RingRetriever {
 	}
 
 	/**
-	 * Samples the color sensor in RGB mode and returns the color detected
+	 * <p>Samples the color sensor in RGB mode and classifies the normalized reading according to test data.</p>
 	 * @param colorMean
 	 * @param colorData
-	 * @return Color (as an int according to lejos library)
+	 * @return lejos.Color of detected ring. returns "Color.NONE" if none of the given rings detected.
 	 */
 	private static int detectRing(SampleProvider colorMean, float[] colorData) {
 		colorMean.fetchSample(colorData, 0); // acquire data
@@ -326,14 +348,13 @@ public class RingRetriever {
           return Color.YELLOW;
         } else if (0.92 < red && red < 0.98 && 0.06 < blue && blue < 0.1) {
           return Color.ORANGE;
-        }         
+        }
 		return Color.NONE;
 	}
 	
 	/**
 	 * 
-	 * @param starting
-	 * @param destinations
+	 * @param starting: point from which we want to get the fastest route from.
 	 * @return list of coordinates in tiles (not cm) in clockwise rotation order. The 0th coordinate is the closest
 	 * coordinate to the starting point. 
 	 */
@@ -370,6 +391,10 @@ public class RingRetriever {
 		return coordinates;
 	}
 
+	/**
+	 * <p>Parses the game parameters from the Wifi Class to build global variables.</p>
+	 * @param data: received game parameters from the Wifi Class.
+	 */
 	@SuppressWarnings("rawtypes") 
 	private static void fillGameParameters(Map data) {
 		if (((Long) data.get("RedTeam")).intValue()== Wifi.TEAM_NUMBER) {
@@ -404,8 +429,15 @@ public class RingRetriever {
 	}
 	
 	/**
-	 * 
-	 * @return coordinates of entrance of tunnel
+	 * <p>The entrance of a tunnel is defined as the tile immediately before the tile in front of the tunnel</p>
+	 *  ___________________________________________________________________
+	 * |            |            |\                        |\              |
+	 * |            |            | \       TUNNEL          | \             |
+	 * |  ENTRANCE  |            |  \______________________|__\            |
+	 * |  TILE      |            |  /                      |  /            |
+	 * |            |            | /       TUNNEL          | /             |
+	 * |____________|____________|/________________________|/______________|
+	 * @return coordinates of entrance of tunnel.
 	 * Tested on 11/10/2018 by Eliott Bourachot
 	 */
 	private static double[] getEntrance() {
@@ -463,8 +495,15 @@ public class RingRetriever {
 	}
 	
 	/**
-	 * 
-	 * @return
+	 * <p>The exit of a tunnel is defined as the tile immediately after the tile in the back of the tunnel</p>
+	 *  ____________________________________________________________________
+	 * |            |\                        |\              |            |
+	 * |            | \       TUNNEL          | \             |            |
+	 * |            |  \______________________|__\            |   EXIT     |
+	 * |            |  /                      |  /            |   TILE     |
+	 * |            | /       TUNNEL          | /             |            |
+	 * |____________|/________________________|/______________|____________|
+	 * @return coordinates of exit of tunnel.
 	 * Tested on 11/10/2018 by Eliott Bourachot
 	 */
 	private static double[] getExit() {
@@ -522,8 +561,11 @@ public class RingRetriever {
 	}
 	
 	/**
-	 * 
-	 * @return
+	 * <p>The "relative right" of the starting zone is the right side of the zone as if the x-y plane is defined in the
+	 * starting corner.
+	 * <i>(i.e. for starting corner 0, the relative right is the same as the actual right, for starting corner 1 the relative right
+	 * is the same as the top of the starting zone, etc...)</i></p>
+	 * @return true if the tunnel is situated at the "relative right" of the starting zone.
 	 * Tested on 11/10/2018 by Eliott Bourachot
 	 */
 	private static boolean isTunnelAtRelativeRight() {
@@ -583,7 +625,7 @@ public class RingRetriever {
 	
 	/**
 	 * 
-	 * @return
+	 * @return the maximum of the tunnel's length in the X and Y direction.
 	 * Tested on 11/10/2018 by Eliott Bourachot
 	 */
 	private static int getMaxTunnelLength() {
@@ -594,9 +636,14 @@ public class RingRetriever {
 	
 	
 	/**
-	 * 
-	 * This method finds the rings on the tree and detects their colors
-	 * The colors are each associated with a value.
+	 * <p>Enables the robot to travel around the tree with the given route.</p>
+	 * <p>For each side that the robot travels on, it detects the ring on the top level of the tree,
+	 * and then on the bottom level of the tree. It fills in the ringArray as it goes.</p>
+	 * @param ringArray
+	 * @param route
+	 * @param colorMean
+	 * @param colorData
+	 * @return an updated ringArray filled with the lejos.Color of the rings detected.
 	 */
 	private static int[][] findRings(int[][] ringArray, double[][] route, SampleProvider colorMean, float[] colorData) {
 		int colourFilter = 0;
@@ -661,14 +708,14 @@ public class RingRetriever {
 	}
 	 
 	/**
-	 * This method loads the rings into the basket section of the robot
-	 * This is done by raising the arms of the robot using the medium motor and taking the rings off the tree
-	 * The way of retrieving the rings is different depending if the ring is on the lower branch or the upper branch
-	 * The angle that the arms move towards the tree differs depending on the position of the ring
-	 * @param x
-	 * @param y
-	 * @param theta
-	 * @param bottom
+	 * <p>Enables to robot to pick up all of the rings according to the given ringArray.</p>
+	 * <p>Picks up the rings in most-expensive to least-expensive order.</p>
+	 * <p>Navigates to the desired ring's side by the most efficient route.</p>
+	 * <p>Picks up the ring by lowering the front arm to a pre-determined angle and lifting the ring of the tree.</p>
+	 * @param ringArray
+	 * @param route
+	 * @param currentSide
+	 * @return the side that the robot is on when it has finished picking up the rings
 	 */
 	private static int pickUpRings(int[][] ringArray, double[][] route, int currentSide) {		
 		while (ringsRemaining(ringArray) > 0) {
@@ -702,11 +749,10 @@ public class RingRetriever {
 	}
 	
 	/**
-	 *This method unloads the rings from the robot
-	 *It will only be called when the robot is back in its home area
-	 *The unloading of the rings will be done using a medium motor
-	 *The motor will lower the back wall of the basket, then the robot will move back and forth until the rings are unloaded
-	 *
+	 * <p>Enables the robot to unload the rings from the robot.</p>
+	 * <p>It will only be called when the robot is back in its home area.</p>
+	 * <p>The unloading of the rings will be done using a medium motor.</p>
+	 * <p>The motor will lower the back wall of the basket, then the robot will move back and forth until the rings are unloaded.</p>
 	 */
 	private static void unloadRings() {		
 		// drop both ends of the robot

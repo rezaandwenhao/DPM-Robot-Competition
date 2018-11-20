@@ -69,6 +69,9 @@ public class Navigation {
 		move(true, true, true, wait, hypotenuse, RingRetriever.FORWARD_SPEED);
 	}
 	
+	/**
+	 * Enables the robot to travel through the tunnel. The speeds and distances have been determined through rigourous testing.
+	 */
 	public void travelThroughTunnel() {
 		move(true, true, true, true, RingRetriever.TILE_SIZE, RingRetriever.FORWARD_SPEED);
 		move(true, true, true, true, RingRetriever.TILE_SIZE, RingRetriever.ROTATE_SPEED);
@@ -76,6 +79,13 @@ public class Navigation {
 		move(true, true, true, true, RingRetriever.TILE_SIZE * 3 - RingRetriever.LIGHT_SENSOR_Y_OFFSET, RingRetriever.FORWARD_SPEED);
 	}
 	
+	/**
+	 * Enables the robot to travel from one corner of the tree to another without colliding with the tree.
+	 * @param route
+	 * @param currentSide: side on which the robot is currently
+	 * @param side: side to which the robot desires to navigate to.
+	 * @return true if the robot should face clockwise to reach its desired target ring, false otherwise
+	 */
 	public boolean squareTravel(double[][] route, int currentSide, int side) {
 		boolean clockwise = false;
 		// Answers the question: If we're at "currentSide" and we want to go to "side"
@@ -173,6 +183,11 @@ public class Navigation {
 	    return clockwise;
 	}
 	
+	/**
+	 * Enables the robot to turn to a set of given coordinates
+	 * @param x
+	 * @param y
+	 */
 	public void turnTo(double x, double y) {
 		double currentPos[] = odo.getXYT();
 		  
@@ -290,6 +305,10 @@ public class Navigation {
 		motorR.stop(false);
 	}
 	
+	/**
+	 * 
+	 * @return true of any of the motors used for navigation are moving, false otherwise.
+	 */
 	public boolean anyMotorMoving() {
 		return (motorL.isMoving() || motorR.isMoving());
 	}

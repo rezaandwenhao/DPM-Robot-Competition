@@ -149,6 +149,11 @@ public class Odometer extends OdometerData implements Runnable {
     }
   }
 
+  /**
+   * Corrects the odometer depending on the given starting corner.
+   * Should be used directly after having localized to the nearest intersection. 
+   * @param startingCorner
+   */
   public void setStartingCoordinates(int startingCorner) {
     switch (startingCorner) {
     case 0:

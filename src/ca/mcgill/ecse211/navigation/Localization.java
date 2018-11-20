@@ -58,6 +58,10 @@ public class Localization {
 		this.odo = odo;
 	}
 	
+	/**
+	 * <p>Enables to robot to localize to the closest intersection from it's starting corner.</p>
+	 * <p>Resets the odometer to (0,0,0).</p>
+	 */
 	public void localizeToIntersection() {
 		fallingEdge();
 		lightCorrection();
@@ -71,13 +75,14 @@ public class Localization {
 	}
 	
 	/**
-	 * This method runs a falling edge localization procedure that follows these instructions:
-	 * 
-	 * When it starts, If the robot is facing a wall, turn clockwise towards void and a bit more.
-	 * Then Rotate clockwise until robot detects  a falling edge, record angle at the falling edge.
-	 * Turn counter clockwise until robot detects a second falling edge, record the angle.
-	 * Perform calculations to find zero degree angle.
-	 * Turn to zero degrees.
+	 * <p>Runs a falling edge localization procedure that follows these instructions:</p>
+	 * <ul>
+	 * <li>When it starts, If the robot is facing a wall, turn clockwise towards void and a bit more.</li>
+	 * <li>Rotate clockwise until robot detects  a falling edge, record angle at the falling edge.</li>
+	 * <li>Turn counter clockwise until robot detects a second falling edge, record the angle.</li>
+	 * <li>Perform calculations to find zero degree angle.</li>
+	 * <li>Turn to zero degrees.</li>
+	 * </ul>
 	 */
 	public void fallingEdge() {
 		
@@ -116,11 +121,8 @@ public class Localization {
 		nav.turnTo(0);
 	}
 	/**
-	 * This method ensures the robot stays on track, it uses 2 light sensors above each wheel to do so.
-	 * When using this method, the robot will move until one of the sensors detects a line.
-	 * The corresponding wheel will stop, until the other wheel crosses the line as well.
-	 * This straightens the robot, and makes it exactly parallel to the grid lines.
-	 * 
+	 * <p>Enables the robot to correct it's position by navigating to the closest black line.</p>
+	 * <p>The robot stops when it is perfectly horizontal to the black line.<p>
 	 */
 	public void lightCorrection() {
 		nav.stopMotors();
@@ -160,7 +162,6 @@ public class Localization {
 	 * This method is used to tell if the robot is facing a wall or a void.
 	 * @return true if the robot detects a wall, false if its not.
 	 * This is called in the fallingEdge method
-	 * 
 	 */
 	boolean seeingSomething() {
 		usMean.fetchSample(usData, 0); // acquire data
@@ -177,6 +178,10 @@ public class Localization {
 		}
 	}
 	
+	/**
+	 * @param left: if true, use the left light sensor, if false, use the right light sensor
+	 * @return true if the robot detects a line, false otherwise
+	 */
     boolean seeingLine(boolean left) {
     	if (left) {
     	    lightMeanL.fetchSample(lightDataL, 0); // acquire data
@@ -255,6 +260,7 @@ public class Localization {
 	
 	/**
 	 * @param x
+	 * @param y
 	 * @return true if location is in a zone, false if in water or past wall
 	 */
 	private boolean isLocationAvailable(double x, double y) {
