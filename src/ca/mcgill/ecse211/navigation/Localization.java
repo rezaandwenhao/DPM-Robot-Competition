@@ -10,12 +10,9 @@
 package ca.mcgill.ecse211.navigation;
 
 import ca.mcgill.ecse211.main.RingRetriever;
-import ca.mcgill.ecse211.main.RingRetriever.Tunnel;
 import ca.mcgill.ecse211.odometer.Odometer;
 import lejos.hardware.Sound;
 import lejos.hardware.lcd.TextLCD;
-import lejos.hardware.motor.EV3LargeRegulatedMotor;
-import lejos.hardware.motor.Motor;
 import lejos.robotics.SampleProvider;
 
 public class Localization {
@@ -35,7 +32,6 @@ public class Localization {
 	// Parameters 
 	private static final int CORRECTION_ANGLE1 = 225;
 	private static final int CORRECTION_ANGLE2 = 45;
-	private static final int CORRECTION_TIMEOUT = 3000;
 	private static final int VOID_THRESHOLD = 30;
 	private static final int VOID_BAND = 3;
 	private static final int LIGHT_THRESHOLD_L = -13; 
@@ -43,16 +39,12 @@ public class Localization {
 	private static final int FORWARD_CORRECTION_SPEED = 80;
 	private static final int ROTATE_CORRECTION_SPEED = 50;
 
-	
 	// Global variables
 	private boolean pastView = false;
-	private static float lightL;
 	private static float nowLightL;
 	private static float pastLightL = -1;
-	private static float lightR;
 	private static float nowLightR;
 	private static float pastLightR = -1;
-	
 	
 	public Localization(SampleProvider lightMeanL, SampleProvider lightMeanR, SampleProvider usMean, 
 			float[] lightDataL, float[] lightDataR, float[] usData, Navigation nav, Odometer odo, TextLCD lcd) {
@@ -64,6 +56,18 @@ public class Localization {
 		this.usData = usData;
 		this.nav = nav;
 		this.odo = odo;
+	}
+	
+	public void localizeToIntersection() {
+		fallingEdge();
+		lightCorrection();
+		odo.setXYT(odo.getXYT()[0], 0 - RingRetriever.LIGHT_SENSOR_Y_OFFSET, 0); // reset Y and Theta
+		nav.move(true, true, false, true, 5, RingRetriever.FORWARD_SPEED);
+		nav.rotate(true, 90, true);
+		lightCorrection();
+		odo.setXYT(0 - RingRetriever.LIGHT_SENSOR_X_OFFSET, odo.getXYT()[1], 90);
+		nav.travelTo(0, 0, true);
+		nav.turnTo(0);
 	}
 	
 	/**
@@ -173,36 +177,36 @@ public class Localization {
 		}
 	}
 	
-        boolean seeingLine(boolean left) {
-        	if (left) {
-        	    lightMeanL.fetchSample(lightDataL, 0); // acquire data
-        	    nowLightL = lightDataL[0] * 1000;
-        	    float diff = nowLightL - pastLightL;
-        	    pastLightL = nowLightL;
-        	    System.out.println("");
-        	    System.out.println("");
-        	    System.out.println("");
-        	    System.out.println("");
-        	    if (diff < LIGHT_THRESHOLD_L) {
-        		System.out.println("");
-        		return true;
-        	    }
-        	    return false;
-        	} else {
-        	    lightMeanR.fetchSample(lightDataR, 0); // acquire data
-        	    nowLightR = lightDataR[0] * 1000;
-        	    float diff = nowLightR - pastLightR;
-        	    pastLightR = nowLightR;
-        	    System.out.println("");
-        	    System.out.println("");
-        	    System.out.println("");
-        	    if (diff < LIGHT_THRESHOLD_R) {
-        		System.out.println("");
-        		return true;
-        	    }
-        	    return false;
-        	}
-        }
+    boolean seeingLine(boolean left) {
+    	if (left) {
+    	    lightMeanL.fetchSample(lightDataL, 0); // acquire data
+    	    nowLightL = lightDataL[0] * 1000;
+    	    float diff = nowLightL - pastLightL;
+    	    pastLightL = nowLightL;
+    	    System.out.println("");
+    	    System.out.println("");
+    	    System.out.println("");
+    	    System.out.println("");
+    	    if (diff < LIGHT_THRESHOLD_L) {
+    		System.out.println("");
+    		return true;
+    	    }
+    	    return false;
+    	} else {
+    	    lightMeanR.fetchSample(lightDataR, 0); // acquire data
+    	    nowLightR = lightDataR[0] * 1000;
+    	    float diff = nowLightR - pastLightR;
+    	    pastLightR = nowLightR;
+    	    System.out.println("");
+    	    System.out.println("");
+    	    System.out.println("");
+    	    if (diff < LIGHT_THRESHOLD_R) {
+    		System.out.println("");
+    		return true;
+    	    }
+    	    return false;
+    	}
+    }
 	
 	/**
 	 * This method takes the two angles detected during the falling edge and calculates zero degrees
@@ -247,11 +251,9 @@ public class Localization {
           odo.setX(directionInfo[0]*RingRetriever.TILE_SIZE);
           odo.setY(directionInfo[1]*RingRetriever.TILE_SIZE);
         }
-
 	}
 	
 	/**
-	 * 
 	 * @param x
 	 * @return true if location is in a zone, false if in water or past wall
 	 */

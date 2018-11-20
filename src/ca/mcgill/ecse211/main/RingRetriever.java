@@ -3,6 +3,8 @@ package ca.mcgill.ecse211.main;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.swing.text.StyleContext.SmallAttributeSet;
+
 import ca.mcgill.ecse211.navigation.Localization;
 import ca.mcgill.ecse211.navigation.Navigation;
 import ca.mcgill.ecse211.odometer.Odometer;
@@ -24,33 +26,18 @@ import lejos.robotics.filter.MeanFilter;
 
 /**
  * <h1>ECSE 211 - Design Principles and Methods</h1>
+ *  ______   ______     ______     __    __        ______   ______     __  __     ______    
+ * /\__  _\ /\  ___\   /\  __ \   /\ "-./  \      /\  ___\ /\  __ \   /\ \/\ \   /\  == \   
+ * \/_/\ \/ \ \  __\   \ \  __ \  \ \ \-./\ \     \ \  __\ \ \ \/\ \  \ \ \_\ \  \ \  __<   
+ *	  \ \_\  \ \_____\  \ \_\ \_\  \ \_\ \ \_\     \ \_\    \ \_____\  \ \_____\  \ \_\ \_\ 
+ *     \/_/   \/_____/   \/_/\/_/   \/_/  \/_/      \/_/     \/_____/   \/_____/   \/_/ /_/
  * @author Eliott Bourachot
- * @edits Wenhao Geng
+ * @edits Wenhao Geng, Eden Ovadia
  *
  */
 public class RingRetriever {
 
-    // Enumerations
-    enum Ring {
-	ORANGE, BLUE, GREEN, YELLOW
-    };
-
-    enum Coordinate {
-	UR, LL
-    };
-
-    enum Location {
-	ZONE, BRIDGE, TREE, STARTING_CORNER
-    };
-
-    enum Team {
-	RED, GREEN
-    };
-
-    public enum Tunnel {
-	LEFT, RIGHT, ABOVE, BELOW
-    };
-
+	// Game parameters
     public static int startingCorner;
     public static int zoneLLx;
     public static int zoneLLy;
@@ -66,12 +53,10 @@ public class RingRetriever {
     public static int tunnelURy;
     public static int ringsetx;
     public static int ringsety;
-    public static Tunnel tunnelEntrance;
-    public static Tunnel tunnelExit;
     public static double[] tunnelEntranceCoordinates;
     public static double[] tunnelExitCoordinates;
 
-    // Parameters
+    // Running Parameters
     public static final double WHEEL_RAD = 2.13; // (cm) measured with caliper
     public static final double TRACK = 16.8; // (cm) measured with caliper
     public static final double LIGHT_SENSOR_X_OFFSET = 3.5;
@@ -86,7 +71,7 @@ public class RingRetriever {
     public static final int ULTRASONIC_OFFSET = -90;
     public static final int FILTER_LIMIT = 10;
 
-    // Angles for motors TODO: Wenhao please change
+    // Angles for motors
     public static final int MED_DOWN = 90;
     public static final int MED_LOWER_RING = 80;
     public static final int MED_UPPER_RING = 60;
@@ -97,12 +82,12 @@ public class RingRetriever {
     public static final int BACK_LOWER_RING = -60;
     public static final int BACK_UPPER_RING = 0;
 
-    // Distances for moving on a side TODO: Wenhao please change
+    // Distances for picking up rings
     public static final double FIRST_HALF_DISTANCE = 22;
     public static final double SECOND_HALF_DISTANCE = 7;
     public static final double PICK_UP_DISTANCE = 6.5;
 
-    // Objects
+    // Global Objects
     private static final EV3LargeRegulatedMotor leftMotor = new EV3LargeRegulatedMotor(LocalEV3.get().getPort("B"));
     private static final EV3LargeRegulatedMotor rightMotor = new EV3LargeRegulatedMotor(LocalEV3.get().getPort("C"));
     private static final EV3LargeRegulatedMotor backMotor = new EV3LargeRegulatedMotor(LocalEV3.get().getPort("A"));
@@ -112,7 +97,9 @@ public class RingRetriever {
     private static final Port lightRPort = LocalEV3.get().getPort("S4");
     private static final Port colorPort = LocalEV3.get().getPort("S3");
     private static final TextLCD lcd = LocalEV3.get().getTextLCD();
-
+    private static Odometer odometer;
+    private static Navigation nav;
+    private static Localization ll;
 	
     /**
      * This method initializes the odometer class and starts the thread It also
@@ -122,337 +109,129 @@ public class RingRetriever {
      * @throws OdometerExceptions
      */
     public static void main(String args[]) throws OdometerExceptions {
-	// Initializing Ultrasonic Sensor and runs it in this thread
-	@SuppressWarnings("resource") // Because we don't bother to close this resource
-	SensorModes usSensor = new EV3UltrasonicSensor(usPort); // usSensor is the instance
-	SampleProvider usSample = usSensor.getMode("Distance");
-	SampleProvider usMean = new MeanFilter(usSample, 5); // use a mean filter to reduce fluctuations
-	float[] usData = new float[usMean.sampleSize()]; // usData is the buffer in which data are returned
-
-	// Initializing Left Light Sensor and runs it in this thread
-	@SuppressWarnings("resource") // Because we don't bother to close this resource
-	SensorModes lightLSensor = new EV3ColorSensor(lightLPort); // usSensor is the instance
-	SampleProvider lightLSample = lightLSensor.getMode("Red");
-	SampleProvider lightLMean = new MeanFilter(lightLSample, 5); // use a mean filter to reduce fluctuations
-	float[] lightLData = new float[lightLMean.sampleSize()]; // usData is the buffer in which data are returned
-
-	// Initializing Right Light Sensor and runs it in this thread
-	@SuppressWarnings("resource") // Because we don't bother to close this resource
-	SensorModes lightRSensor = new EV3ColorSensor(lightRPort); // usSensor is the instance
-	SampleProvider lightRSample = lightRSensor.getMode("Red");
-	SampleProvider lightRMean = new MeanFilter(lightRSample, 5); // use a mean filter to reduce fluctuations
-	float[] lightRData = new float[lightRMean.sampleSize()]; // usData is the buffer in which data are returned
-
-	Wifi wifi = new Wifi();
-	Map data = wifi.getData();
-
-	fillGlobalData(data);
-
-	// Odometer
-	Odometer odometer = Odometer.getOdometer(leftMotor, rightMotor, TRACK, WHEEL_RAD);
-	Thread odoThread = new Thread(odometer);
-	odoThread.start();
-
-	// Navigation
-	Navigation nav = new Navigation(leftMotor, rightMotor, WHEEL_RAD, WHEEL_RAD, TRACK, odometer);
-
-	Localization ll = new Localization(lightLMean, lightRMean, usMean, lightLData, lightRData, usData, nav,
-		odometer, lcd);
-
-	// localize to the closest intersection
-	ll.fallingEdge();
-	ll.lightCorrection();
-	odometer.setXYT(odometer.getXYT()[0], 0 - LIGHT_SENSOR_Y_OFFSET, 0); // reset Y and Theta
-	nav.move(true, true, false, true, 5, FORWARD_SPEED);
-	nav.rotate(true, 90, true);
-	ll.lightCorrection();
-	odometer.setXYT(0 - LIGHT_SENSOR_X_OFFSET, odometer.getXYT()[1], 90);
-	nav.travelTo(0, 0, true);
-	nav.turnTo(0);
-
-	// correct position depending on given start corner
-	odometer.setStartingCoordinates(startingCorner);
-
-	Sound.beep();
-	Sound.beep();
-	Sound.beep();
-
-	// navigate to tunnel
-	// entranceInfo is X,Y,THETA where THETA is the angle of the entrance to the
-	// tunnel
-	double[] entranceInfo = getEntrance();
-	nav.travelTo(entranceInfo[0], entranceInfo[1], true);
-
-	// localize to "entrance" of tunnel
-	ll.tunnelLocalization(entranceInfo, false);
-
-	// move through tunnel
-	nav.move(true, true, true, true, TILE_SIZE, FORWARD_SPEED);
-	nav.move(true, true, true, true, TILE_SIZE, ROTATE_SPEED);
-	nav.move(false, true, true, true, 1, ROTATE_SPEED); // brute force offset, turn left a bit in the tunnel
-	nav.move(true, true, true, true, TILE_SIZE * 3 - LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
-
-	// localize to exit of tunnel
-	double[] exitInfo = getExit();
-	exitInfo[2] = exitInfo[2] - 180; // reverse theta to have robot end point away from tunnel
-	ll.tunnelLocalization(exitInfo, true);
-
-	// determine which point around the tree is closest and determine a 'route'
-	double[] startingPoint = { exitInfo[0], exitInfo[1] }; // this point should be where the robot is currently
-	double[][] route = getFastestRoute(startingPoint);
+    	// Initializing Ultrasonic Sensor and runs it in this thread
+		@SuppressWarnings("resource") // Because we don't bother to close this resource
+		SensorModes usSensor = new EV3UltrasonicSensor(usPort); // usSensor is the instance
+		SampleProvider usSample = usSensor.getMode("Distance");
+		SampleProvider usMean = new MeanFilter(usSample, 5); // use a mean filter to reduce fluctuations
+		float[] usData = new float[usMean.sampleSize()]; // usData is the buffer in which data are returned
 	
-	// each corner has a side associated to it and vice-versa like this
-	//               side 2        			
-	// corner 1 ________________  corner 2
-	//		   |                |
-	//         |                |
-	// side 1  |      tree      | side 3
-	//         |                |
-	//         |                |
-	//         |________________|
-	// corner 0      side 0      corner 3
+		// Initializing Left Light Sensor and runs it in this thread
+		@SuppressWarnings("resource") // Because we don't bother to close this resource
+		SensorModes lightLSensor = new EV3ColorSensor(lightLPort); // usSensor is the instance
+		SampleProvider lightLSample = lightLSensor.getMode("Red");
+		SampleProvider lightLMean = new MeanFilter(lightLSample, 5); // use a mean filter to reduce fluctuations
+		float[] lightLData = new float[lightLMean.sampleSize()]; // usData is the buffer in which data are returned
 	
-	// navigate to tree
-	nav.travelTo(route[0][0], route[0][1], true);
-
-	// Initializing Color Sensor and runs it in this thread
-	@SuppressWarnings("resource") // Because we don't bother to close this resource
-	SensorModes colorSensor = new EV3ColorSensor(colorPort); // usSensor is the instance
-	SampleProvider colorSample = colorSensor.getMode("RGB");
-	SampleProvider colorMean = new MeanFilter(colorSample, 5); // use a mean filter to reduce fluctuations
-	float[] colorData = new float[colorMean.sampleSize()]; // usData is the buffer in which data are returned
-
-	// move light sensor to top row of rings height (should already be there ?)
-
-	// initialize ringArray which will be 4x2 array
-	// the first [] corresponds to the route on which the ring was found
-	// the second [] corresponds to the height at which the ring was found (0 being
-	// top and 1 being bottom)
-	// see diagram B
-	int ringArray[][] = { { Color.NONE, Color.NONE }, { Color.NONE, Color.NONE }, { Color.NONE, Color.NONE },
-		{ Color.NONE, Color.NONE } };
-
-	int colourFilter = 0;
-	int pastColour = Color.NONE;
-	// walk around tree to detect rings on top and bottom level
-	int path[] = { 1, 2, 3, 0 };
-	for (int side = 0; side < path.length; side++) {
-	    nav.turnTo(route[path[side]][0], route[path[side]][1]);
-	    ll.lightCorrection();
-	    // Correct ODOMETER
-	    if (getCorrectedTheta(odometer) == 90) {
-		odometer.setXYT((route[path[side]][0]-1)*TILE_SIZE, odometer.getXYT()[1], getCorrectedTheta(odometer));
-	    } else if (getCorrectedTheta(odometer) == 270) {
-		odometer.setXYT((route[path[side]][0]+1)*TILE_SIZE, odometer.getXYT()[1], getCorrectedTheta(odometer));
-	    } else if (getCorrectedTheta(odometer) == 0) {
-		odometer.setXYT(odometer.getXYT()[0], (route[path[side]][1]-1)*TILE_SIZE, getCorrectedTheta(odometer));
-	    } else if (getCorrectedTheta(odometer) == 180) {
-		odometer.setXYT(odometer.getXYT()[0], (route[path[side]][1]+1)*TILE_SIZE, getCorrectedTheta(odometer));
-	    }
-
-	    // TOP LEVEL RING DETECTION
-
-	    nav.move(true, true, true, false, FIRST_HALF_DISTANCE, FORWARD_SPEED);
-	    while (leftMotor.isMoving() && rightMotor.isMoving()) {
-		// detect color of ring
-		if (colourFilter < FILTER_LIMIT) {
-		    ringArray[path[side]][0] = detectRing(colorMean, colorData);
-		    if (ringArray[path[side]][0] == pastColour && pastColour != Color.NONE) {
-			colourFilter++;
-			if (colourFilter == FILTER_LIMIT)
-			    beepRing(ringArray[path[side]][0]);
-		    } else {
-			colourFilter = 0;
-		    }
-		    pastColour = ringArray[path[side]][0];
-		}
-	    }
-	    colourFilter = 0;
-
-	    // BOTTOM LEVEL RING DETECTION
-	    backMotor.rotateTo(BACK_LOWER_RING);
-
-	    nav.move(true, true, true, false, SECOND_HALF_DISTANCE, FORWARD_SPEED);
-	    while (leftMotor.isMoving() && rightMotor.isMoving()) {
-		// detect color of ring
-		if (colourFilter < FILTER_LIMIT) {
-		    ringArray[path[side]][1] = detectRing(colorMean, colorData);
-		    if (ringArray[path[side]][1] == pastColour && pastColour != Color.NONE) {
-			colourFilter++;
-			if (colourFilter == FILTER_LIMIT)
-			    beepRing(ringArray[path[side]][1]);
-		    } else {
-			colourFilter = 0;
-		    }
-		    pastColour = ringArray[path[side]][1];
-		}
-	    }
-	    colourFilter = 0;
-	    backMotor.rotateTo(BACK_UPPER_RING);
-	}
-
-	// picking up rings
-	int currentSide = 0;
+		// Initializing Right Light Sensor and runs it in this thread
+		@SuppressWarnings("resource") // Because we don't bother to close this resource
+		SensorModes lightRSensor = new EV3ColorSensor(lightRPort); // usSensor is the instance
+		SampleProvider lightRSample = lightRSensor.getMode("Red");
+		SampleProvider lightRMean = new MeanFilter(lightRSample, 5); // use a mean filter to reduce fluctuations
+		float[] lightRData = new float[lightRMean.sampleSize()]; // usData is the buffer in which data are returned
 	
-	while (ringsRemaining(ringArray) > 0) {
-	    // find most valuable ring
-	    int[] sideAndLevel = getMostValuableRing(ringArray); // array is [side,level]
-	    int side = sideAndLevel[0];
-	    System.out.println("Traveling to side #: " + side);
-	    int level = sideAndLevel[1];
-	    ringArray = resetRing(sideAndLevel[0], sideAndLevel[1], ringArray); // reset ring value so we don't pick it
-										// up again
-	    
-	    boolean clockwise = false; //determine whether the robot turns clockwise to face the tree
-
-	    // Answers the question: If we're at "currentSide" and we want to go to "side"
-	    // how do we get there efficiently
-	    switch (currentSide) {
-	    case 0:
-		switch (side) {
-		case 0:
-		    nav.turnTo(route[3][0], route[3][1]);
-		    clockwise = false;
-		    break;
-		case 1:
-		    nav.turnTo(route[1][0], route[1][1]);
-		    clockwise = true;
-		    break;
-		case 2:
-		    nav.travelTo(route[1][0], route[1][1], true);
-		    nav.turnTo(route[2][0], route[2][1]);
-		    clockwise = true;
-		    break;
-		case 3:
-		    nav.travelTo(route[3][0], route[3][1], true);
-		    nav.turnTo(route[2][0], route[2][1]);
-		    clockwise = false;
-		    break;
-		}
-		break;
-	    case 1:
-		switch (side) {
-		case 0:
-		    nav.travelTo(route[0][0], route[0][1], true);
-		    nav.turnTo(route[3][0], route[3][1]);
-		    clockwise = false;
-		    break;
-		case 1:
-		    nav.turnTo(route[0][0], route[0][1]);
-		    clockwise = false;
-		    break;
-		case 2:
-		    nav.turnTo(route[2][0], route[2][1]);
-		    clockwise = true;
-		    break;
-		case 3:
-		    nav.travelTo(route[2][0], route[2][1], true);
-		    nav.turnTo(route[3][0], route[3][1]);
-		    clockwise = true;
-		    break;
-		}
-		break;
-	    case 2:
-		switch (side) {
-		case 0:
-		    nav.travelTo(route[3][0], route[3][1], true);
-		    nav.turnTo(route[0][0], route[0][1]);
-		    clockwise = true;
-		    break;
-		case 1:
-		    nav.travelTo(route[1][0], route[1][1], true);
-		    nav.turnTo(route[0][0], route[0][1]);
-		    clockwise = false;
-		    break;
-		case 2:
-		    nav.turnTo(route[1][0], route[1][1]);
-		    clockwise = false;
-		    break;
-		case 3:
-		    nav.turnTo(route[3][0], route[3][1]);
-		    clockwise = true;
-		    break;
-		}
-		break;
-	    case 3:
-		switch (side) {
-		case 0:
-		    nav.turnTo(route[0][0], route[0][1]);
-		    clockwise = true;
-		    break;
-		case 1:
-		    nav.travelTo(route[0][0], route[0][1], true);
-		    nav.turnTo(route[1][0], route[1][1]);
-		    clockwise = true;
-		    break;
-		case 2:
-		    nav.travelTo(route[2][0], route[2][1], true);
-		    nav.turnTo(route[1][0], route[1][1]);
-		    clockwise = false;
-		    break;
-		case 3:
-		    nav.turnTo(route[2][0], route[2][1]);
-		    clockwise = false;
-		    break;
-		}
-		break;
-	    }
-
-	    ll.lightCorrection();
-
-	    nav.move(true, true, true, true, PICK_UP_DISTANCE, FORWARD_SPEED);
-	    
-	    nav.rotate(clockwise, 90, true); // rotate towards tree
-	    nav.move(true, true, false, true, 12, FORWARD_SPEED); // TODO: test value // back off a bit to lower arm
-	    int rotateAngle = (level == 1) ? 80 : 60; // TODO: test values // lower arm depending on level
-	    medMotor.rotate(rotateAngle); // TODO: test value // lower arm
-	    int forwardToFlick = (level == 1) ? 6 : 11;
-	    nav.move(true, true, true, true, forwardToFlick, FORWARD_SPEED); // TODO: test value // move close enough to ring
-	    medMotor.rotate(-rotateAngle); // bring arm back up
-	    nav.move(true, true, false, true, forwardToFlick, FORWARD_SPEED);
-	    medMotor.rotateTo(0); // restore the arm again in case it was stuck
-	    nav.travelTo(route[side][0], route[side][1], true);
-	    currentSide = side;
-	}
-
-	// travel back to closest corner
-	while (!canTravelStraight(currentSide, 0)) {
-	    currentSide = (currentSide + 1) % 4;
-	    System.out.println("Go through side #: " + currentSide);
-	    nav.travelTo(route[currentSide][0], route[currentSide][1], true);
-	}
-
-	// travel back to tunnel exit
-	nav.travelTo(exitInfo[0], exitInfo[1], true);
-	exitInfo[2] = exitInfo[2] - 180; // reverse theta to have robot end point towards tunnel
-	ll.tunnelLocalization(exitInfo, true);
-
-	// move through tunnel
-	nav.move(true, true, true, true, TILE_SIZE, FORWARD_SPEED);
-	nav.move(true, true, true, true, TILE_SIZE, ROTATE_SPEED);
-	nav.move(false, true, true, true, 1, ROTATE_SPEED); // brute force offset, turn left a bit in the tunnel
-	nav.move(true, true, true, true, TILE_SIZE * 3 - LIGHT_SENSOR_Y_OFFSET, FORWARD_SPEED);
-
-	// move to center of our zone
-	int[] middleZone = { zoneURx - zoneLLx, zoneURy - zoneLLy };
-	nav.travelTo(middleZone[0], middleZone[1], true);
-
-	// unload rings
-
-	// drop both ends of the robot
-	medMotor.rotateTo(MED_DOWN);
-	backMotor.rotateTo(BACK_DOWN);
-
-	// shake to unload rings
-	boolean alternate = true;
-	int shakeCounter = 0;
-	while (shakeCounter++ < 20) {
-	    nav.move(true, true, alternate, true, 3, 1000);
-	    alternate = !alternate;
-	}
-
-	// end
-	System.exit(0);
+		Wifi wifi = new Wifi();
+		@SuppressWarnings("rawtypes")
+		Map data = wifi.getData();
+		
+		fillGameParameters(data);
+	
+		// Odometer
+		odometer = Odometer.getOdometer(leftMotor, rightMotor, TRACK, WHEEL_RAD);
+		Thread odoThread = new Thread(odometer);
+		odoThread.start();
+	
+		// Navigation
+		nav = new Navigation(leftMotor, rightMotor, WHEEL_RAD, WHEEL_RAD, TRACK, odometer);
+	
+		// Localization
+		ll = new Localization(lightLMean, lightRMean, usMean, lightLData, lightRData, usData, nav,
+			odometer, lcd);
+	
+		// localize to the closest intersection
+		ll.localizeToIntersection();
+	
+		// correct position depending on given start corner
+		odometer.setStartingCoordinates(startingCorner);
+	
+		Sound.beep();
+		Sound.beep();
+		Sound.beep();
+	
+		// navigate to tunnel
+		// entranceInfo is X,Y,THETA where THETA is the angle of the entrance to the
+		// tunnel
+		double[] entranceInfo = getEntrance();
+		nav.travelTo(entranceInfo[0], entranceInfo[1], true);
+	
+		// localize to "entrance" of tunnel
+		ll.tunnelLocalization(entranceInfo, false);
+	
+		// move through tunnel
+		nav.travelThroughTunnel();
+	
+		// localize to exit of tunnel
+		double[] exitInfo = getExit();
+		exitInfo[2] = exitInfo[2] - 180; // reverse theta to have robot end point away from tunnel
+		ll.tunnelLocalization(exitInfo, true);
+	
+		// determine which point around the tree is closest and determine a 'route'
+		double[] startingPoint = { exitInfo[0], exitInfo[1] }; // this point should be where the robot is currently
+		double[][] route = getFastestRoute(startingPoint);
+		
+		// each corner has a side associated to it and vice-versa like this
+		//               side 2        			
+		// corner 1 ________________  corner 2
+		//		   |                |
+		//         |                |
+		// side 1  |      tree      | side 3
+		//         |                |
+		//         |                |
+		//         |________________|
+		// corner 0      side 0      corner 3
+		
+		// navigate to tree
+		nav.travelTo(route[0][0], route[0][1], true);
+	
+		// Color Sensor
+		@SuppressWarnings("resource") // Because we don't bother to close this resource
+		SensorModes colorSensor = new EV3ColorSensor(colorPort); // usSensor is the instance
+		SampleProvider colorSample = colorSensor.getMode("RGB");
+		SampleProvider colorMean = new MeanFilter(colorSample, 5); // use a mean filter to reduce fluctuations
+		float[] colorData = new float[colorMean.sampleSize()]; // usData is the buffer in which data are returned
+	
+		// initialize ringArray which will be 4x2 array
+		// the first [] corresponds to the route on which the ring was found
+		// the second [] corresponds to the height at which the ring was found (0 being top and 1 being bottom)
+		int ringArray[][] = { { Color.NONE, Color.NONE }, { Color.NONE, Color.NONE }, { Color.NONE, Color.NONE },
+			{ Color.NONE, Color.NONE } };
+	
+		// detect the rings and store the results in array
+		ringArray = findRings(ringArray, route, colorMean, colorData);
+	
+		// picking up rings
+		int currentSide = 0;
+		currentSide = pickUpRings(ringArray, route, currentSide);
+	
+		// travel back to closest corner
+		nav.squareTravel(route, currentSide, 0);
+	
+		// travel back to tunnel exit
+		nav.travelTo(exitInfo[0], exitInfo[1], true);
+		exitInfo[2] = exitInfo[2] - 180; // reverse theta to have robot end point towards tunnel
+		ll.tunnelLocalization(exitInfo, true);
+	
+		// move through tunnel
+		nav.travelThroughTunnel();
+	
+		// move to center of our zone
+		int[] middleZone = { zoneURx - zoneLLx, zoneURy - zoneLLy };
+		nav.travelTo(middleZone[0], middleZone[1], true);
+	
+		unloadRings();
+	
+		// end
+		System.exit(0);
     }
 	
 	private static double getCorrectedTheta(Odometer odo) {
@@ -462,14 +241,6 @@ public class RingRetriever {
 	  else if (150 < theta && theta < 210) return 180;
 	  else if (240 < theta && theta < 300) return 270;
 	  else return theta;
-	}
-
-	private static boolean canTravelStraight(int from, int to) {
-		if (from == to || from+1 == to) {
-			return true;
-		} else {
-			return false;
-		}
 	}
 	
 	private static int ringsRemaining(int[][] ringArray) {
@@ -599,8 +370,8 @@ public class RingRetriever {
 		return coordinates;
 	}
 
-
-	public static void fillGlobalData(Map data) {
+	@SuppressWarnings("rawtypes") 
+	private static void fillGameParameters(Map data) {
 		if (((Long) data.get("RedTeam")).intValue()== Wifi.TEAM_NUMBER) {
 			startingCorner = ((Long)data.get("RedCorner")).intValue();
 			zoneLLx = ((Long)data.get("Red_LL_x")).intValue();
@@ -637,7 +408,7 @@ public class RingRetriever {
 	 * @return coordinates of entrance of tunnel
 	 * Tested on 11/10/2018 by Eliott Bourachot
 	 */
-	public static double[] getEntrance() {
+	private static double[] getEntrance() {
 		double[] coordinates = {0,0,0};
 		
 		boolean rightSide = isTunnelAtRelativeRight(); // true if tunnel is determined to be on the right side of our zone
@@ -696,7 +467,7 @@ public class RingRetriever {
 	 * @return
 	 * Tested on 11/10/2018 by Eliott Bourachot
 	 */
-	public static double[] getExit() {
+	private static double[] getExit() {
 		double[] coordinates = {0,0,0};
 	
 		boolean rightSide = isTunnelAtRelativeRight(); // true if tunnel is determined to be on the right (relative) side of our zone
@@ -825,10 +596,68 @@ public class RingRetriever {
 	/**
 	 * 
 	 * This method finds the rings on the tree and detects their colors
-	 * The colors are each associated with a value, with orange being worth the most
+	 * The colors are each associated with a value.
 	 */
-	public void findRings() {
-		
+	private static int[][] findRings(int[][] ringArray, double[][] route, SampleProvider colorMean, float[] colorData) {
+		int colourFilter = 0;
+		int pastColour = Color.NONE;
+		// walk around tree to detect rings on top and bottom level
+		int path[] = { 1, 2, 3, 0 };
+		for (int side = 0; side < path.length; side++) {
+		    nav.turnTo(route[path[side]][0], route[path[side]][1]);
+		    ll.lightCorrection();
+		    // Correct ODOMETER
+		    if (getCorrectedTheta(odometer) == 90) {
+			odometer.setXYT((route[path[side]][0]-1)*TILE_SIZE, odometer.getXYT()[1], getCorrectedTheta(odometer));
+		    } else if (getCorrectedTheta(odometer) == 270) {
+			odometer.setXYT((route[path[side]][0]+1)*TILE_SIZE, odometer.getXYT()[1], getCorrectedTheta(odometer));
+		    } else if (getCorrectedTheta(odometer) == 0) {
+			odometer.setXYT(odometer.getXYT()[0], (route[path[side]][1]-1)*TILE_SIZE, getCorrectedTheta(odometer));
+		    } else if (getCorrectedTheta(odometer) == 180) {
+			odometer.setXYT(odometer.getXYT()[0], (route[path[side]][1]+1)*TILE_SIZE, getCorrectedTheta(odometer));
+		    }
+
+		    // TOP LEVEL RING DETECTION
+
+		    nav.move(true, true, true, false, FIRST_HALF_DISTANCE, FORWARD_SPEED);
+		    while (leftMotor.isMoving() && rightMotor.isMoving()) {
+			// detect color of ring
+			if (colourFilter < FILTER_LIMIT) {
+			    ringArray[path[side]][0] = detectRing(colorMean, colorData);
+			    if (ringArray[path[side]][0] == pastColour && pastColour != Color.NONE) {
+				colourFilter++;
+				if (colourFilter == FILTER_LIMIT)
+				    beepRing(ringArray[path[side]][0]);
+			    } else {
+				colourFilter = 0;
+			    }
+			    pastColour = ringArray[path[side]][0];
+			}
+		    }
+		    colourFilter = 0;
+
+		    // BOTTOM LEVEL RING DETECTION
+		    backMotor.rotateTo(BACK_LOWER_RING);
+
+		    nav.move(true, true, true, false, SECOND_HALF_DISTANCE, FORWARD_SPEED);
+		    while (leftMotor.isMoving() && rightMotor.isMoving()) {
+			// detect color of ring
+			if (colourFilter < FILTER_LIMIT) {
+			    ringArray[path[side]][1] = detectRing(colorMean, colorData);
+			    if (ringArray[path[side]][1] == pastColour && pastColour != Color.NONE) {
+				colourFilter++;
+				if (colourFilter == FILTER_LIMIT)
+				    beepRing(ringArray[path[side]][1]);
+			    } else {
+				colourFilter = 0;
+			    }
+			    pastColour = ringArray[path[side]][1];
+			}
+		    }
+		    colourFilter = 0;
+		    backMotor.rotateTo(BACK_UPPER_RING);
+		}
+		return ringArray;
 	}
 	 
 	/**
@@ -841,9 +670,37 @@ public class RingRetriever {
 	 * @param theta
 	 * @param bottom
 	 */
-	public static void loadRing(double x, double y, double theta, double bottom) {
-		
+	private static int pickUpRings(int[][] ringArray, double[][] route, int currentSide) {		
+		while (ringsRemaining(ringArray) > 0) {
+		    // find most valuable ring
+		    int[] sideAndLevel = getMostValuableRing(ringArray); // array is [side,level]
+		    int side = sideAndLevel[0];
+		    System.out.println("Traveling to side #: " + side);
+		    int level = sideAndLevel[1];
+		    ringArray = resetRing(sideAndLevel[0], sideAndLevel[1], ringArray); // reset ring value so we don't pick it
+											// up again
+		    
+		    boolean clockwise = nav.squareTravel(route, currentSide, side); //determine whether the robot turns clockwise to face the tree
+
+		    ll.lightCorrection();
+
+		    nav.move(true, true, true, true, PICK_UP_DISTANCE, FORWARD_SPEED);
+		    
+		    nav.rotate(clockwise, 90, true); // rotate towards tree
+		    nav.move(true, true, false, true, 12, FORWARD_SPEED); // TODO: test value // back off a bit to lower arm
+		    int rotateAngle = (level == 1) ? 80 : 60; // TODO: test values // lower arm depending on level
+		    medMotor.rotate(rotateAngle); // TODO: test value // lower arm
+		    int forwardToFlick = (level == 1) ? 6 : 11;
+		    nav.move(true, true, true, true, forwardToFlick, FORWARD_SPEED); // TODO: test value // move close enough to ring
+		    medMotor.rotate(-rotateAngle); // bring arm back up
+		    nav.move(true, true, false, true, forwardToFlick, FORWARD_SPEED);
+		    medMotor.rotateTo(0); // restore the arm again in case it was stuck
+		    nav.travelTo(route[side][0], route[side][1], true);
+		    currentSide = side;
+		}
+		return currentSide;
 	}
+	
 	/**
 	 *This method unloads the rings from the robot
 	 *It will only be called when the robot is back in its home area
@@ -851,8 +708,18 @@ public class RingRetriever {
 	 *The motor will lower the back wall of the basket, then the robot will move back and forth until the rings are unloaded
 	 *
 	 */
-	public void unloadRing() {
-		
+	private static void unloadRings() {		
+		// drop both ends of the robot
+		medMotor.rotateTo(MED_DOWN);
+		backMotor.rotateTo(BACK_DOWN);
+	
+		// shake to unload rings
+		boolean alternate = true;
+		int shakeCounter = 0;
+		while (shakeCounter++ < 20) {
+		    nav.move(true, true, alternate, true, 3, 1000);
+		    alternate = !alternate;
+		}
 	}
 	
 	

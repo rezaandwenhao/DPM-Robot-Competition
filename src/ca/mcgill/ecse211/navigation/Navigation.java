@@ -1,6 +1,6 @@
 
 /**
- * This is the navigationn class.
+ * This is the navigation class.
  * It contains the falling edge method which will orient the robot towards zero degrees, using the ultrasonic sensor
  * It also contains the light localization which ensures the robot is parallel to the grid lines using 2 light sensors
  * @author Eden Ovadia
@@ -11,10 +11,6 @@
 import ca.mcgill.ecse211.main.RingRetriever;
 import ca.mcgill.ecse211.odometer.Odometer;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
-
-/*
- * Navigation.java
- */
 
 /**
  * This class is used to drive the robot on the demo floor.
@@ -73,15 +69,116 @@ public class Navigation {
 		move(true, true, true, wait, hypotenuse, RingRetriever.FORWARD_SPEED);
 	}
 	
+	public void travelThroughTunnel() {
+		move(true, true, true, true, RingRetriever.TILE_SIZE, RingRetriever.FORWARD_SPEED);
+		move(true, true, true, true, RingRetriever.TILE_SIZE, RingRetriever.ROTATE_SPEED);
+		move(false, true, true, true, 1, RingRetriever.ROTATE_SPEED); // brute force offset, turn left a bit in the tunnel
+		move(true, true, true, true, RingRetriever.TILE_SIZE * 3 - RingRetriever.LIGHT_SENSOR_Y_OFFSET, RingRetriever.FORWARD_SPEED);
+	}
+	
+	public boolean squareTravel(double[][] route, int currentSide, int side) {
+		boolean clockwise = false;
+		// Answers the question: If we're at "currentSide" and we want to go to "side"
+	    // how do we get there efficiently
+	    switch (currentSide) {
+	    case 0:
+		switch (side) {
+		case 0:
+		    turnTo(route[3][0], route[3][1]);
+		    clockwise = false;
+		    break;
+		case 1:
+		    turnTo(route[1][0], route[1][1]);
+		    clockwise = true;
+		    break;
+		case 2:
+		    travelTo(route[1][0], route[1][1], true);
+		    turnTo(route[2][0], route[2][1]);
+		    clockwise = true;
+		    break;
+		case 3:
+		    travelTo(route[3][0], route[3][1], true);
+		    turnTo(route[2][0], route[2][1]);
+		    clockwise = false;
+		    break;
+		}
+		break;
+	    case 1:
+		switch (side) {
+		case 0:
+		    travelTo(route[0][0], route[0][1], true);
+		    turnTo(route[3][0], route[3][1]);
+		    clockwise = false;
+		    break;
+		case 1:
+		    turnTo(route[0][0], route[0][1]);
+		    clockwise = false;
+		    break;
+		case 2:
+		    turnTo(route[2][0], route[2][1]);
+		    clockwise = true;
+		    break;
+		case 3:
+		    travelTo(route[2][0], route[2][1], true);
+		    turnTo(route[3][0], route[3][1]);
+		    clockwise = true;
+		    break;
+		}
+		break;
+	    case 2:
+		switch (side) {
+		case 0:
+		    travelTo(route[3][0], route[3][1], true);
+		    turnTo(route[0][0], route[0][1]);
+		    clockwise = true;
+		    break;
+		case 1:
+		    travelTo(route[1][0], route[1][1], true);
+		    turnTo(route[0][0], route[0][1]);
+		    clockwise = false;
+		    break;
+		case 2:
+		    turnTo(route[1][0], route[1][1]);
+		    clockwise = false;
+		    break;
+		case 3:
+		    turnTo(route[3][0], route[3][1]);
+		    clockwise = true;
+		    break;
+		}
+		break;
+	    case 3:
+		switch (side) {
+		case 0:
+		    turnTo(route[0][0], route[0][1]);
+		    clockwise = true;
+		    break;
+		case 1:
+		    travelTo(route[0][0], route[0][1], true);
+		    turnTo(route[1][0], route[1][1]);
+		    clockwise = true;
+		    break;
+		case 2:
+		    travelTo(route[2][0], route[2][1], true);
+		    turnTo(route[1][0], route[1][1]);
+		    clockwise = false;
+		    break;
+		case 3:
+		    turnTo(route[2][0], route[2][1]);
+		    clockwise = false;
+		    break;
+		}
+		break;
+	    }
+	    return clockwise;
+	}
+	
 	public void turnTo(double x, double y) {
 		double currentPos[] = odo.getXYT();
 		  
 		//difference in position
 		double deltaX = x*RingRetriever.TILE_SIZE-currentPos[0];
 		double deltaY = y*RingRetriever.TILE_SIZE-currentPos[1];
-	  
-		// length of straight line from current position to desired position
-		double hypotenuse = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
 	  
 		//angle from hypotenuse to X axis
 		if (deltaY == 0) deltaY = 0.0001;
