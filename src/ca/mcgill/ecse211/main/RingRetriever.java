@@ -1,16 +1,12 @@
 package ca.mcgill.ecse211.main;
 
-import java.util.HashMap;
 import java.util.Map;
-
-import javax.swing.text.StyleContext.SmallAttributeSet;
 
 import ca.mcgill.ecse211.navigation.Localization;
 import ca.mcgill.ecse211.navigation.Navigation;
 import ca.mcgill.ecse211.odometer.Odometer;
 import ca.mcgill.ecse211.odometer.OdometerExceptions;
 import ca.mcgill.ecse211.wifi.Wifi;
-import lejos.hardware.Button;
 import lejos.hardware.Sound;
 import lejos.hardware.ev3.LocalEV3;
 import lejos.hardware.lcd.TextLCD;
@@ -26,11 +22,7 @@ import lejos.robotics.filter.MeanFilter;
 
 /**
  * <h1>ECSE 211 - Design Principles and Methods</h1>
- *  ______   ______     ______     __    __        ______   ______     __  __     ______    
- * /\__  _\ /\  ___\   /\  __ \   /\ "-./  \      /\  ___\ /\  __ \   /\ \/\ \   /\  == \   
- * \/_/\ \/ \ \  __\   \ \  __ \  \ \ \-./\ \     \ \  __\ \ \ \/\ \  \ \ \_\ \  \ \  __<   
- *	  \ \_\  \ \_____\  \ \_\ \_\  \ \_\ \ \_\     \ \_\    \ \_____\  \ \_____\  \ \_\ \_\ 
- *     \/_/   \/_____/   \/_/\/_/   \/_/  \/_/      \/_/     \/_____/   \/_____/   \/_/ /_/
+ * <h2>Team 04 </h2>
  * @author Eliott Bourachot
  * @edits Wenhao Geng, Eden Ovadia
  *
@@ -430,13 +422,6 @@ public class RingRetriever {
 	
 	/**
 	 * <p>The entrance of a tunnel is defined as the tile immediately before the tile in front of the tunnel</p>
-	 *  ___________________________________________________________________
-	 * |            |            |\                        |\              |
-	 * |            |            | \       TUNNEL          | \             |
-	 * |  ENTRANCE  |            |  \______________________|__\            |
-	 * |  TILE      |            |  /                      |  /            |
-	 * |            |            | /       TUNNEL          | /             |
-	 * |____________|____________|/________________________|/______________|
 	 * @return coordinates of entrance of tunnel.
 	 * Tested on 11/10/2018 by Eliott Bourachot
 	 */
@@ -496,13 +481,6 @@ public class RingRetriever {
 	
 	/**
 	 * <p>The exit of a tunnel is defined as the tile immediately after the tile in the back of the tunnel</p>
-	 *  ____________________________________________________________________
-	 * |            |\                        |\              |            |
-	 * |            | \       TUNNEL          | \             |            |
-	 * |            |  \______________________|__\            |   EXIT     |
-	 * |            |  /                      |  /            |   TILE     |
-	 * |            | /       TUNNEL          | /             |            |
-	 * |____________|/________________________|/______________|____________|
 	 * @return coordinates of exit of tunnel.
 	 * Tested on 11/10/2018 by Eliott Bourachot
 	 */

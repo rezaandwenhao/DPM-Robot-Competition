@@ -3,7 +3,6 @@ package ca.mcgill.ecse211.wifi;
 import java.util.Map;
 
 import ca.mcgill.ecse211.WiFiClient.WifiConnection;
-import lejos.hardware.Button;
 
 /**
  * Example class using WifiConnection to communicate with a server and receive data concerning the
