@@ -36,7 +36,7 @@ public class Localization {
 	private static final int VOID_BAND = 3;
 	private static final int LIGHT_THRESHOLD_L = -13; 
 	private static final int LIGHT_THRESHOLD_R = -25; 
-	private static final int FORWARD_CORRECTION_SPEED = 80;
+	private static final int FORWARD_CORRECTION_SPEED = 90;
 	private static final int ROTATE_CORRECTION_SPEED = 50;
 
 	// Global variables
@@ -66,7 +66,7 @@ public class Localization {
 		fallingEdge();
 		lightCorrection();
 		odo.setXYT(odo.getXYT()[0], 0 - RingRetriever.LIGHT_SENSOR_Y_OFFSET, 0); // reset Y and Theta
-		nav.move(true, true, false, true, 5, RingRetriever.FORWARD_SPEED);
+		nav.move(true, true, false, true, 5, RingRetriever.FORWARD_SPEED+100);
 		nav.rotate(true, 90, true);
 		lightCorrection();
 		odo.setXYT(0 - RingRetriever.LIGHT_SENSOR_X_OFFSET, odo.getXYT()[1], 90);
@@ -147,12 +147,14 @@ public class Localization {
 			nav.move(false, true, true, false, 10, ROTATE_CORRECTION_SPEED);
 			while (!seeingLine(false));
 			Sound.beep();
+			nav.move(false, true, true, true, 1, ROTATE_CORRECTION_SPEED);
 			nav.stopMotors();
 		} else if (rightLightDetected) {
 			nav.move(true, false, false, true, 3, FORWARD_CORRECTION_SPEED);
 			nav.move(true, false, true, false, 10, ROTATE_CORRECTION_SPEED);
 			while (!seeingLine(true));
 			Sound.beep();
+			nav.move(true, false, true, true, 1, ROTATE_CORRECTION_SPEED);
 			nav.stopMotors();
 		}
 		Sound.beepSequence();

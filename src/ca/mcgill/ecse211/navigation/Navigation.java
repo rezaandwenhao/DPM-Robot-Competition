@@ -66,7 +66,7 @@ public class Navigation {
 		turnTo(desiredAngle);
 	  
 		//move forwards to reach the point x,y.
-		move(true, true, true, wait, hypotenuse, RingRetriever.FORWARD_SPEED);
+		move(true, true, true, wait, hypotenuse, RingRetriever.TRAVEL_SPEED);
 	}
 	
 	/**

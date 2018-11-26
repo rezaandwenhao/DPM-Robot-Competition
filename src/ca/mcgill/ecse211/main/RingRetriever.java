@@ -29,6 +29,10 @@ import lejos.robotics.filter.MeanFilter;
  */
 public class RingRetriever {
 
+	// TO CHANGE BEFORE DEMO
+    public static final int BOARD_WIDTH = 8;
+    public static final int BOARD_HEIGHT = 8;
+	
 	// Game parameters
     public static int startingCorner;
     public static int zoneLLx;
@@ -52,22 +56,21 @@ public class RingRetriever {
     public static final double LIGHT_SENSOR_X_OFFSET = 3.5;
     public static final double LIGHT_SENSOR_Y_OFFSET = 8;
 
+    public static final int TRAVEL_SPEED = 300;
     public static final int FORWARD_SPEED = 150;
-    public static final int ROTATE_SPEED = 70;
+    public static final int ROTATE_SPEED = 120; //70;
     public static final double TILE_SIZE = 30.48;
     public static final double HALF_TILE_SIZE = 15.24;
-    public static final int BOARD_WIDTH = 8;
-    public static final int BOARD_HEIGHT = 8;
     public static final int ULTRASONIC_OFFSET = -90;
     public static final int FILTER_LIMIT = 10;
 
     // Angles for motors
     public static final int MED_DOWN = 90;
     public static final int MED_LOWER_RING = 80;
-    public static final int MED_UPPER_RING = 60;
+    public static final int MED_UPPER_RING = 50;
     public static final int MED_UP = 0;
 
-    public static final int BACK_DOWN = 10;
+    public static final int BACK_DOWN = -90;
     public static final int BACK_UP = 0;
     public static final int BACK_LOWER_RING = -60;
     public static final int BACK_UPPER_RING = 0;
@@ -102,6 +105,7 @@ public class RingRetriever {
      * @throws OdometerExceptions
      */
     public static void main(String args[]) throws OdometerExceptions {
+    	
     	// Initializing Ultrasonic Sensor and runs it in this thread
 		@SuppressWarnings("resource") // Because we don't bother to close this resource
 		SensorModes usSensor = new EV3UltrasonicSensor(usPort); // usSensor is the instance
@@ -159,7 +163,6 @@ public class RingRetriever {
 	
 		// localize to "entrance" of tunnel
 		ll.tunnelLocalization(entranceInfo, false);
-	
 		// move through tunnel
 		nav.travelThroughTunnel();
 	
@@ -185,6 +188,10 @@ public class RingRetriever {
 		
 		// navigate to tree
 		nav.travelTo(route[0][0], route[0][1], true);
+		
+		Sound.beep();
+		Sound.beep();
+		Sound.beep();
 	
 		// Color Sensor
 		@SuppressWarnings("resource") // Because we don't bother to close this resource
@@ -223,6 +230,12 @@ public class RingRetriever {
 	
 		unloadRings();
 	
+		Sound.beep();
+		Sound.beep();
+		Sound.beep();
+		Sound.beep();
+		Sound.beep();
+		
 		// end
 		System.exit(0);
     }
@@ -352,7 +365,7 @@ public class RingRetriever {
 	 */
 	private static double[][] getFastestRoute(double[] starting) {
 		
-		double distanceFromTree=0.7;
+		double distanceFromTree=0.6;
 		
 		// determine 4 points around tree and their distances from the given starting point
 		double[] bottomLeft = {ringsetx-distanceFromTree, ringsety-distanceFromTree};
@@ -631,6 +644,7 @@ public class RingRetriever {
 		for (int side = 0; side < path.length; side++) {
 		    nav.turnTo(route[path[side]][0], route[path[side]][1]);
 		    ll.lightCorrection();
+		    
 		    // Correct ODOMETER
 		    if (getCorrectedTheta(odometer) == 90) {
 			odometer.setXYT((route[path[side]][0]-1)*TILE_SIZE, odometer.getXYT()[1], getCorrectedTheta(odometer));
@@ -712,10 +726,10 @@ public class RingRetriever {
 		    nav.move(true, true, true, true, PICK_UP_DISTANCE, FORWARD_SPEED);
 		    
 		    nav.rotate(clockwise, 90, true); // rotate towards tree
-		    nav.move(true, true, false, true, 12, FORWARD_SPEED); // TODO: test value // back off a bit to lower arm
-		    int rotateAngle = (level == 1) ? 80 : 60; // TODO: test values // lower arm depending on level
-		    medMotor.rotate(rotateAngle); // TODO: test value // lower arm
-		    int forwardToFlick = (level == 1) ? 6 : 11;
+		    nav.move(true, true, false, true, 12, FORWARD_SPEED); 
+		    int rotateAngle = (level == 1) ? MED_LOWER_RING : MED_UPPER_RING; 
+		    medMotor.rotate(rotateAngle);
+		    int forwardToFlick = (level == 1) ? 6 : 12;
 		    nav.move(true, true, true, true, forwardToFlick, FORWARD_SPEED); // TODO: test value // move close enough to ring
 		    medMotor.rotate(-rotateAngle); // bring arm back up
 		    nav.move(true, true, false, true, forwardToFlick, FORWARD_SPEED);
