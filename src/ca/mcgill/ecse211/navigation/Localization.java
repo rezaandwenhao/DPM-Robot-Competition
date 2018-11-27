@@ -34,8 +34,8 @@ public class Localization {
 	private static final int CORRECTION_ANGLE2 = 45;
 	private static final int VOID_THRESHOLD = 30;
 	private static final int VOID_BAND = 3;
-	private static final int LIGHT_THRESHOLD_L = -13; 
-	private static final int LIGHT_THRESHOLD_R = -25; 
+	private static final int LIGHT_THRESHOLD_L = -15; 
+	private static final int LIGHT_THRESHOLD_R = -35; 
 	private static final int FORWARD_CORRECTION_SPEED = 90;
 	private static final int ROTATE_CORRECTION_SPEED = 50;
 
@@ -143,14 +143,14 @@ public class Localization {
 		if (leftLightDetected && rightLightDetected) {
 			nav.stopMotors();
 		} else if (leftLightDetected) {
-			nav.move(false, true, false, true, 3, FORWARD_CORRECTION_SPEED);
+			nav.move(false, true, false, true, 1, FORWARD_CORRECTION_SPEED);
 			nav.move(false, true, true, false, 10, ROTATE_CORRECTION_SPEED);
 			while (!seeingLine(false));
 			Sound.beep();
-			nav.move(false, true, true, true, 1, ROTATE_CORRECTION_SPEED);
+			nav.move(false, true, true, true, 0.5, ROTATE_CORRECTION_SPEED);
 			nav.stopMotors();
 		} else if (rightLightDetected) {
-			nav.move(true, false, false, true, 3, FORWARD_CORRECTION_SPEED);
+			nav.move(true, false, false, true, 1, FORWARD_CORRECTION_SPEED);
 			nav.move(true, false, true, false, 10, ROTATE_CORRECTION_SPEED);
 			while (!seeingLine(true));
 			Sound.beep();

@@ -66,6 +66,7 @@ public class Navigation {
 		turnTo(desiredAngle);
 	  
 		//move forwards to reach the point x,y.
+		stopMotors();
 		move(true, true, true, wait, hypotenuse, RingRetriever.TRAVEL_SPEED);
 	}
 	

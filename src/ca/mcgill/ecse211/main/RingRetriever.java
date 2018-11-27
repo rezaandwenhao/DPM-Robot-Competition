@@ -30,8 +30,8 @@ import lejos.robotics.filter.MeanFilter;
 public class RingRetriever {
 
 	// TO CHANGE BEFORE DEMO
-    public static final int BOARD_WIDTH = 8;
-    public static final int BOARD_HEIGHT = 8;
+    public static final int BOARD_WIDTH = 15;
+    public static final int BOARD_HEIGHT = 9;
 	
 	// Game parameters
     public static int startingCorner;
@@ -77,7 +77,7 @@ public class RingRetriever {
 
     // Distances for picking up rings
     public static final double FIRST_HALF_DISTANCE = 22;
-    public static final double SECOND_HALF_DISTANCE = 7;
+    public static final double SECOND_HALF_DISTANCE = 6;
     public static final double PICK_UP_DISTANCE = 6.5;
 
     // Global Objects
@@ -365,7 +365,7 @@ public class RingRetriever {
 	 */
 	private static double[][] getFastestRoute(double[] starting) {
 		
-		double distanceFromTree=0.6;
+		double distanceFromTree=0.63;
 		
 		// determine 4 points around tree and their distances from the given starting point
 		double[] bottomLeft = {ringsetx-distanceFromTree, ringsety-distanceFromTree};
@@ -710,7 +710,7 @@ public class RingRetriever {
 	 * @return the side that the robot is on when it has finished picking up the rings
 	 */
 	private static int pickUpRings(int[][] ringArray, double[][] route, int currentSide) {		
-		while (ringsRemaining(ringArray) > 0) {
+		while (ringsRemaining(ringArray) > 2) {
 		    // find most valuable ring
 		    int[] sideAndLevel = getMostValuableRing(ringArray); // array is [side,level]
 		    int side = sideAndLevel[0];
