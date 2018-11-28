@@ -154,22 +154,34 @@ public class Odometer extends OdometerData implements Runnable {
    * Should be used directly after having localized to the nearest intersection. 
    * @param startingCorner
    */
-  public void setStartingCoordinates(int startingCorner) {
+  public double[] setStartingCoordinates(int startingCorner) {
+    double x = 0,y = 0,theta = 0;
     switch (startingCorner) {
     case 0:
-    	odo.update(RingRetriever.TILE_SIZE, RingRetriever.TILE_SIZE, 0);
+    	x = RingRetriever.TILE_SIZE;
+    	y = RingRetriever.TILE_SIZE;
+    	theta = 0;
     	break;
     case 1:
-    	odo.update((RingRetriever.BOARD_WIDTH-1)*RingRetriever.TILE_SIZE, RingRetriever.TILE_SIZE, -90);
+	x = (RingRetriever.BOARD_WIDTH-1)*RingRetriever.TILE_SIZE;
+	y = RingRetriever.TILE_SIZE;
+	theta = -90;
     	break;
     case 2:
-    	odo.update((RingRetriever.BOARD_WIDTH-1)*RingRetriever.TILE_SIZE, (RingRetriever.BOARD_HEIGHT-1)*RingRetriever.TILE_SIZE, 180);
+	x = (RingRetriever.BOARD_WIDTH-1)*RingRetriever.TILE_SIZE;
+	y = (RingRetriever.BOARD_HEIGHT-1)*RingRetriever.TILE_SIZE;
+	theta = 180;
     	break;
     case 3:
-    	odo.update(RingRetriever.TILE_SIZE, (RingRetriever.BOARD_HEIGHT-1)*RingRetriever.TILE_SIZE, 90);
+	x = RingRetriever.TILE_SIZE;
+	y = (RingRetriever.BOARD_HEIGHT-1)*RingRetriever.TILE_SIZE;
+	theta = 90;
     	break;
     default:
     	break;
     }
+    odo.update(RingRetriever.TILE_SIZE, RingRetriever.TILE_SIZE, 0);
+    double[] val = {x,y,theta};
+    return val;
   }
 }

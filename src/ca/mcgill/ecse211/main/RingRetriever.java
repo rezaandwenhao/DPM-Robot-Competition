@@ -149,7 +149,7 @@ public class RingRetriever {
 		ll.localizeToIntersection();
 	
 		// correct position depending on given start corner
-		odometer.setStartingCoordinates(startingCorner);
+		double[] startingCoordinates = odometer.setStartingCoordinates(startingCorner);
 	
 		Sound.beep();
 		Sound.beep();
@@ -224,9 +224,8 @@ public class RingRetriever {
 		// move through tunnel
 		nav.travelThroughTunnel();
 	
-		// move to center of our zone
-		int[] middleZone = { zoneURx - zoneLLx, zoneURy - zoneLLy };
-		nav.travelTo(middleZone[0], middleZone[1], true);
+		// move to starting corner
+		nav.travelTo(startingCoordinates[0], startingCoordinates[1], true);
 	
 		unloadRings();
 	
@@ -365,7 +364,7 @@ public class RingRetriever {
 	 */
 	private static double[][] getFastestRoute(double[] starting) {
 		
-		double distanceFromTree=0.63;
+		double distanceFromTree=0.677;
 		
 		// determine 4 points around tree and their distances from the given starting point
 		double[] bottomLeft = {ringsetx-distanceFromTree, ringsety-distanceFromTree};

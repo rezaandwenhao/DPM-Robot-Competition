@@ -76,7 +76,7 @@ public class Navigation {
 	public void travelThroughTunnel() {
 		move(true, true, true, true, RingRetriever.TILE_SIZE, RingRetriever.FORWARD_SPEED);
 		move(true, true, true, true, RingRetriever.TILE_SIZE, RingRetriever.ROTATE_SPEED);
-		move(false, true, true, true, 1, RingRetriever.ROTATE_SPEED); // brute force offset, turn left a bit in the tunnel
+		move(false, true, true, true, 2, RingRetriever.ROTATE_SPEED); // brute force offset, turn left a bit in the tunnel
 		move(true, true, true, true, RingRetriever.TILE_SIZE * 3 - RingRetriever.LIGHT_SENSOR_Y_OFFSET, RingRetriever.FORWARD_SPEED);
 	}
 	
